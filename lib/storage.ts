@@ -96,7 +96,7 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
 
 function readStoredAuth(): StoredAuthSession | null {
   if (typeof window === "undefined") return null;
-  const raw = localStorage.getItem("studyrx_auth_session");
+  const raw = localStorage.getItem("learnza_auth_session");
   if (!raw) return null;
   try {
     return JSON.parse(raw) as StoredAuthSession;
@@ -127,7 +127,7 @@ async function getStoredAuth(options?: { forceRefresh?: boolean }): Promise<Stor
           uid: decodedUid,
         },
       };
-      localStorage.setItem("studyrx_auth_session", JSON.stringify(current));
+      localStorage.setItem("learnza_auth_session", JSON.stringify(current));
     }
   }
 
@@ -148,7 +148,7 @@ async function getStoredAuth(options?: { forceRefresh?: boolean }): Promise<Stor
           uid: refreshed.uid || current.user.uid || resolveUidFromToken(refreshed.idToken),
         },
       };
-      localStorage.setItem("studyrx_auth_session", JSON.stringify(current));
+      localStorage.setItem("learnza_auth_session", JSON.stringify(current));
     } catch {
       return current;
     }

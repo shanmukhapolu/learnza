@@ -68,40 +68,104 @@ function SignUpContent() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="max-w-md w-full glass-card tech-border">
-        <CardHeader>
-          <CardTitle>Create your StudyRx account</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <form onSubmit={onSubmit} className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <Input placeholder="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
-              <Input placeholder="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+      <div className="w-full max-w-md space-y-6">
+        {/* Brand */}
+        <div className="text-center">
+          <div className="inline-flex items-center gap-2 mb-4">
+            <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center yellow-glow">
+              <span className="text-primary-foreground font-extrabold text-xl leading-none">L</span>
             </div>
-            <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            <Input type="password" placeholder="Confirm password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>{loading ? "Creating account..." : "Sign Up"}</Button>
-          </form>
+            <span className="text-2xl font-extrabold text-foreground">Learnza</span>
+          </div>
+          <p className="text-muted-foreground text-sm">AP Exam Prep</p>
+        </div>
 
-          <div className="text-center text-sm text-muted-foreground">or</div>
-          <GoogleSignInButton onCredential={async (credential) => {
-            setError("");
-            setLoading(true);
-            try {
-              await signInWithGoogleCredential(credential);
-              router.replace(next);
-            } catch (err) {
-              setError((err as Error).message || "Google sign up failed");
-            } finally {
-              setLoading(false);
-            }
-          }} />
+        <Card className="glass-card tech-border">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-2xl font-extrabold">Create your Learnza account</CardTitle>
+            <p className="text-sm text-muted-foreground">Start prepping for your AP exams — free forever</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <form onSubmit={onSubmit} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  placeholder="First name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                  className="h-11"
+                />
+                <Input
+                  placeholder="Last name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                  className="h-11"
+                />
+              </div>
+              <Input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="h-11"
+              />
+              <Input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="h-11"
+              />
+              <Input
+                type="password"
+                placeholder="Confirm password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="h-11"
+              />
+              {error && <p className="text-sm text-destructive">{error}</p>}
+              <Button type="submit" className="w-full h-11 font-bold yellow-glow-sm" disabled={loading}>
+                {loading ? "Creating account..." : "Sign Up Free"}
+              </Button>
+            </form>
 
-          <p className="text-sm text-center">Already have an account? <Link className="underline" href="/auth/signin">Sign in</Link></p>
-        </CardContent>
-      </Card>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">or</span>
+              </div>
+            </div>
+
+            <GoogleSignInButton
+              onCredential={async (credential) => {
+                setError("");
+                setLoading(true);
+                try {
+                  await signInWithGoogleCredential(credential);
+                  router.replace(next);
+                } catch (err) {
+                  setError((err as Error).message || "Google sign up failed");
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            />
+
+            <p className="text-sm text-center text-muted-foreground">
+              Already have an account?{" "}
+              <Link className="font-semibold text-primary underline underline-offset-2" href="/auth/signin">
+                Sign in
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

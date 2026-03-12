@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "question": "Which trade network connected East Asia, Southeast Asia, South Asia, the Middle East, and East Africa between 600–1450 CE?",
+    "options": [
+      "The Silk Roads",
+      "The Indian Ocean Trade Network",
+      "The Trans-Saharan Trade Routes",
+      "The Mediterranean Trade Network"
+    ],
+    "correctAnswer": "The Indian Ocean Trade Network",
+    "category": "Trade & Exchange",
+    "difficulty": "Easy",
+    "explanation": "The Indian Ocean Trade Network was the most extensive maritime trade system of the era, linking civilizations across three continents and facilitating the exchange of goods, ideas, and religions."
+  },
+  {
+    "id": 2,
+    "question": "The spread of Islam along trade routes most directly led to which of the following?",
+    "options": [
+      "The decline of the Byzantine Empire",
+      "The creation of syncretic cultural practices in trading port cities",
+      "The end of the Silk Roads",
+      "The collapse of the Tang Dynasty"
+    ],
+    "correctAnswer": "The creation of syncretic cultural practices in trading port cities",
+    "category": "Religion & Culture",
+    "difficulty": "Medium",
+    "explanation": "As Islam spread along trade routes, it blended with local traditions in ports like Swahili Coast cities and Southeast Asian kingdoms, producing syncretic cultures that adopted Islamic law and practices while retaining local customs."
+  },
+  {
+    "id": 3,
+    "question": "Which of the following best describes the significance of the Mongol Empire for Eurasian trade (1200–1350)?",
+    "options": [
+      "It destroyed all Silk Roads connections permanently",
+      "It facilitated cross-continental trade by providing security along trade routes",
+      "It isolated China from the rest of Eurasia",
+      "It ended the Indian Ocean trade network"
+    ],
+    "correctAnswer": "It facilitated cross-continental trade by providing security along trade routes",
+    "category": "State Building & Empires",
+    "difficulty": "Medium",
+    "explanation": "The Pax Mongolica (Mongol Peace) provided relative stability and safety across the vast Mongol Empire, enabling merchants like Marco Polo to travel the Silk Roads and greatly increasing the volume of cross-continental trade and cultural exchange."
+  },
+  {
+    "id": 4,
+    "question": "The plantation system established in the Americas during the 16th–18th centuries was most directly responsible for which of the following?",
+    "options": [
+      "The development of the encomienda system",
+      "The expansion of the transatlantic slave trade",
+      "The decline of the Ottoman Empire",
+      "The rise of mercantilism in Asia"
+    ],
+    "correctAnswer": "The expansion of the transatlantic slave trade",
+    "category": "Slavery & Labor Systems",
+    "difficulty": "Easy",
+    "explanation": "The labor-intensive demands of sugar, tobacco, and cotton plantations in the Americas drove European colonizers to import enslaved Africans on a massive scale, creating the transatlantic slave trade that forcibly moved over 12 million Africans to the Americas."
+  },
+  {
+    "id": 5,
+    "question": "Which event most directly caused the demographic collapse of Indigenous populations in the Americas after 1492?",
+    "options": [
+      "Forced agricultural labor",
+      "Warfare with European settlers",
+      "Epidemic diseases introduced by Europeans",
+      "Displacement from coastal regions"
+    ],
+    "correctAnswer": "Epidemic diseases introduced by Europeans",
+    "category": "Demographic Change",
+    "difficulty": "Easy",
+    "explanation": "Indigenous peoples of the Americas had no prior exposure — and thus no immunity — to Old World diseases like smallpox, measles, and influenza. These epidemics killed an estimated 50–90% of the pre-Columbian population within a century of contact."
+  }
+]

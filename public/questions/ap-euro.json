@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "question": "Which of the following best describes a major consequence of the Protestant Reformation in 16th-century Europe?",
+    "options": [
+      "The strengthening of papal authority over European monarchs",
+      "The fragmentation of Christian unity and the rise of religious conflict",
+      "The end of the Holy Roman Empire",
+      "The rapid decline of the Catholic Church's cultural influence"
+    ],
+    "correctAnswer": "The fragmentation of Christian unity and the rise of religious conflict",
+    "category": "Religion & Reform",
+    "difficulty": "Easy",
+    "explanation": "Luther's 95 Theses (1517) and subsequent reformers like Calvin and Zwingli shattered the religious unity of Western Europe, sparking decades of conflict including the French Wars of Religion, the Thirty Years' War, and fundamentally reshaping European politics and society."
+  },
+  {
+    "id": 2,
+    "question": "The Scientific Revolution of the 16th and 17th centuries challenged medieval thought primarily by doing which of the following?",
+    "options": [
+      "Rejecting all forms of religious belief",
+      "Replacing authority-based knowledge with empirical observation and mathematical reasoning",
+      "Establishing the Catholic Church as the arbiter of natural philosophy",
+      "Demonstrating that ancient Greek texts were entirely correct"
+    ],
+    "correctAnswer": "Replacing authority-based knowledge with empirical observation and mathematical reasoning",
+    "category": "Intellectual & Cultural Change",
+    "difficulty": "Medium",
+    "explanation": "Figures like Copernicus, Galileo, Kepler, and Newton shifted European intellectual culture away from Aristotelian authority and Church doctrine toward direct observation, experimentation, and mathematical description of natural phenomena."
+  },
+  {
+    "id": 3,
+    "question": "The Congress of Vienna (1814–1815) was primarily designed to achieve which of the following goals?",
+    "options": [
+      "Spread liberal nationalism across Europe",
+      "Restore the balance of power and pre-Napoleonic political order",
+      "Create a united German nation-state",
+      "End the Ottoman Empire's influence in Europe"
+    ],
+    "correctAnswer": "Restore the balance of power and pre-Napoleonic political order",
+    "category": "State Building & Politics",
+    "difficulty": "Easy",
+    "explanation": "The Congress of Vienna, led by Metternich, Castlereagh, and Tsar Alexander I, aimed to restore the conservative monarchical order in Europe after the Napoleonic Wars, redraw borders to prevent any single state from dominating the continent, and suppress revolutionary nationalism."
+  },
+  {
+    "id": 4,
+    "question": "Which of the following was a primary cause of the First World War?",
+    "options": [
+      "The assassination of Archduke Franz Ferdinand combined with the alliance system",
+      "Germany's invasion of France in 1912",
+      "The Russian Revolution destabilizing Eastern Europe",
+      "Britain's withdrawal from the European balance of power"
+    ],
+    "correctAnswer": "The assassination of Archduke Franz Ferdinand combined with the alliance system",
+    "category": "War & Conflict",
+    "difficulty": "Easy",
+    "explanation": "While the assassination of Archduke Franz Ferdinand in Sarajevo (1914) was the immediate trigger, the alliance system (Triple Alliance vs. Triple Entente), militarism, imperial rivalries, and intense nationalism transformed a regional crisis into a world war."
+  },
+  {
+    "id": 5,
+    "question": "The Marshall Plan (1948) was most directly intended to accomplish which of the following?",
+    "options": [
+      "Fund German rearmament after World War II",
+      "Provide economic aid to rebuild Western European economies and resist Soviet influence",
+      "Establish NATO as a military alliance",
+      "Divide Germany into occupation zones"
+    ],
+    "correctAnswer": "Provide economic aid to rebuild Western European economies and resist Soviet influence",
+    "category": "Post-War Europe",
+    "difficulty": "Medium",
+    "explanation": "The Marshall Plan provided over $12 billion in economic assistance to Western European nations, stimulating recovery and creating stable democratic economies that would resist the appeal of communism — a key goal of early Cold War U.S. and Western policy."
+  }
+]

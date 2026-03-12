@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Home, Layers, BarChart3 } from "lucide-react";
+import { Home, Layers, BarChart3, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -24,9 +24,9 @@ const navItems = [
     icon: Home,
   },
   {
-    title: "Events",
-    href: "/events",
-    icon: Layers,
+    title: "Courses",
+    href: "/courses",
+    icon: BookOpen,
   },
   {
     title: "Analytics",
@@ -45,16 +45,13 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border p-6">
-        <Link href="/dashboard" className="flex items-center gap-4">
-          <Image
-            src="/logo.png"
-            alt="StudyRx Logo"
-            width={40}
-            height={40}
-            className="h-10 w-10"
-          />
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary yellow-glow-sm">
+            <span className="text-primary-foreground font-bold text-lg leading-none">L</span>
+          </div>
           <div className="flex flex-col">
-            <span className="text-xl font-bold text-sidebar-foreground">StudyRx</span>
+            <span className="text-xl font-extrabold text-sidebar-foreground tracking-tight">Learnza</span>
+            <span className="text-xs text-muted-foreground font-medium">AP Exam Prep</span>
           </div>
         </Link>
       </SidebarHeader>
@@ -64,7 +61,7 @@ export function AppSidebar() {
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
                 asChild
-                isActive={pathname === item.href}
+                isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
                 tooltip={item.title}
                 className="py-6"
               >

@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "question": "Which of the following best explains why atomic radius decreases across a period from left to right?",
+    "options": [
+      "The number of electron shells increases",
+      "Increasing nuclear charge pulls electrons closer to the nucleus",
+      "More neutrons increase the density of the nucleus",
+      "Electronegativity decreases across a period"
+    ],
+    "correctAnswer": "Increasing nuclear charge pulls electrons closer to the nucleus",
+    "category": "Atomic Structure",
+    "difficulty": "Easy",
+    "explanation": "Across a period, the number of protons increases while electrons are added to the same principal energy level. The greater nuclear charge (more protons) exerts a stronger attractive force on the electron cloud, pulling it inward and decreasing the atomic radius."
+  },
+  {
+    "id": 2,
+    "question": "For a reaction with ΔH = -120 kJ/mol and ΔS = -200 J/mol·K, at what temperature does the reaction become non-spontaneous?",
+    "options": [
+      "600 K",
+      "400 K",
+      "800 K",
+      "200 K"
+    ],
+    "correctAnswer": "600 K",
+    "category": "Thermodynamics",
+    "difficulty": "Hard",
+    "explanation": "A reaction is spontaneous when ΔG = ΔH − TΔS < 0. Setting ΔG = 0: T = ΔH/ΔS = (−120,000 J/mol) / (−200 J/mol·K) = 600 K. Above 600 K, ΔG becomes positive and the reaction is non-spontaneous."
+  },
+  {
+    "id": 3,
+    "question": "Which of the following describes a buffer solution?",
+    "options": [
+      "A solution with a pH of exactly 7",
+      "A solution that resists changes in pH when small amounts of acid or base are added",
+      "A solution that contains only a weak acid",
+      "A solution that neutralizes all added acids"
+    ],
+    "correctAnswer": "A solution that resists changes in pH when small amounts of acid or base are added",
+    "category": "Acids & Bases",
+    "difficulty": "Easy",
+    "explanation": "A buffer consists of a weak acid and its conjugate base (or weak base and conjugate acid). When acid is added, the conjugate base reacts with it; when base is added, the weak acid reacts with it. This equilibrium resists significant pH changes."
+  },
+  {
+    "id": 4,
+    "question": "In a first-order reaction, if the initial concentration of reactant is 0.80 M and the rate constant k = 0.025 s⁻¹, what is the half-life?",
+    "options": [
+      "27.7 s",
+      "32.0 s",
+      "40.0 s",
+      "16.0 s"
+    ],
+    "correctAnswer": "27.7 s",
+    "category": "Kinetics",
+    "difficulty": "Medium",
+    "explanation": "For a first-order reaction, t₁/₂ = ln(2) / k = 0.693 / 0.025 s⁻¹ ≈ 27.7 s. Note that the half-life of a first-order reaction is independent of the initial concentration."
+  },
+  {
+    "id": 5,
+    "question": "Which of the following changes would shift the equilibrium of the reaction N₂(g) + 3H₂(g) ⇌ 2NH₃(g) to the right?",
+    "options": [
+      "Decreasing pressure",
+      "Increasing temperature",
+      "Increasing the concentration of NH₃",
+      "Increasing pressure"
+    ],
+    "correctAnswer": "Increasing pressure",
+    "category": "Equilibrium",
+    "difficulty": "Medium",
+    "explanation": "The forward reaction produces 2 moles of gas from 4 moles of reactants (fewer moles of gas). By Le Chatelier's Principle, increasing pressure shifts equilibrium toward the side with fewer moles of gas — the products (right side)."
+  }
+]

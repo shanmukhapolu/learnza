@@ -54,7 +54,7 @@ function AnalyticsContent() {
     <div className="flex-1 overflow-auto p-6 space-y-6">
       <header className="rounded-2xl border border-primary/25 bg-gradient-to-r from-primary/10 via-accent/10 to-transparent p-6">
         <h1 className="text-3xl font-bold flex items-center gap-2"><Activity className="h-7 w-7 text-primary" /> Analytics Command</h1>
-        <p className="text-muted-foreground mt-2">Organized, colorful insights for speed, accuracy, redemption, and mastery.</p>
+        <p className="text-muted-foreground mt-2">Organized insights for speed, accuracy, redemption, and AP exam mastery.</p>
       </header>
 
       <Tabs defaultValue="general" className="space-y-4">
@@ -133,13 +133,13 @@ function GeneralStats({ sessions, onOpenSession }: { sessions: SessionData[]; on
           <Metric label="Avg Think Time" value={`${(totalQuestions ? totalThink / totalQuestions : 0).toFixed(1)}s`} />
           <Metric label="Avg Explanation Time" value={`${(totalQuestions ? totalExplanation / totalQuestions : 0).toFixed(1)}s`} />
           <Metric label="Think : Explanation Ratio" value={totalExplanation > 0 ? `${(totalThink / totalExplanation).toFixed(2)} : 1` : "N/A"} />
-          <Metric label="Events" value={`${sortedEvents.length}`} />
+          <Metric label="Courses" value={`${sortedEvents.length}`} />
         </MetricGrid>
       </SectionCard>
 
-      <SectionCard title="Event Insights" subtitle="Best/worst and performance by event" icon={<Medal className="h-5 w-5 text-primary" />}>
+      <SectionCard title="Course Insights" subtitle="Best/worst and performance by AP course" icon={<Medal className="h-5 w-5 text-primary" />}>
         <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm mb-3">
-          Best event: <strong>{bestEvent ? getEventName(bestEvent.eventId) : "N/A"}</strong> • Worst event: <strong>{worstEvent ? getEventName(worstEvent.eventId) : "N/A"}</strong> • Event with most time spent: <strong>{mostTimeEvent ? getEventName(mostTimeEvent.eventId) : "N/A"}</strong>
+          Best course: <strong>{bestEvent ? getEventName(bestEvent.eventId) : "N/A"}</strong> • Needs work: <strong>{worstEvent ? getEventName(worstEvent.eventId) : "N/A"}</strong> • Most time spent: <strong>{mostTimeEvent ? getEventName(mostTimeEvent.eventId) : "N/A"}</strong>
         </div>
         <BreakdownRows rows={sortedEvents.map((event) => ({ label: getEventName(event.eventId), value: `${event.accuracy.toFixed(1)}% (${event.correct}/${event.questions})` }))} />
       </SectionCard>

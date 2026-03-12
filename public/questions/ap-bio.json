@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "question": "Which of the following best describes the role of ATP synthase in cellular respiration?",
+    "options": [
+      "It directly breaks down glucose to produce ATP",
+      "It uses a proton gradient to drive the synthesis of ATP from ADP and Pi",
+      "It transfers electrons from NADH to oxygen",
+      "It converts pyruvate to acetyl-CoA"
+    ],
+    "correctAnswer": "It uses a proton gradient to drive the synthesis of ATP from ADP and Pi",
+    "category": "Cell Biology & Energy",
+    "difficulty": "Medium",
+    "explanation": "ATP synthase (Complex V) harnesses the potential energy stored in the proton (H+) gradient across the inner mitochondrial membrane — established by the electron transport chain — to phosphorylate ADP into ATP. This process is called chemiosmosis."
+  },
+  {
+    "id": 2,
+    "question": "A mutation that prevents the formation of the mitotic spindle would most likely result in which of the following?",
+    "options": [
+      "Failure of DNA replication during S phase",
+      "Cells unable to separate sister chromatids during anaphase",
+      "Premature entry into meiosis",
+      "Uncontrolled transcription of oncogenes"
+    ],
+    "correctAnswer": "Cells unable to separate sister chromatids during anaphase",
+    "category": "Cell Division",
+    "difficulty": "Medium",
+    "explanation": "The mitotic spindle, composed of microtubules, attaches to kinetochores on chromosomes and pulls sister chromatids toward opposite poles during anaphase. Without a functional spindle, chromosomes cannot be properly segregated, leading to aneuploidy."
+  },
+  {
+    "id": 3,
+    "question": "In a Hardy-Weinberg population, the frequency of the recessive allele (q) is 0.3. What percentage of the population is expected to be heterozygous?",
+    "options": [
+      "9%",
+      "42%",
+      "49%",
+      "30%"
+    ],
+    "correctAnswer": "42%",
+    "category": "Genetics & Evolution",
+    "difficulty": "Hard",
+    "explanation": "Under Hardy-Weinberg equilibrium: p + q = 1, so p = 0.7. Heterozygote frequency = 2pq = 2(0.7)(0.3) = 0.42, or 42%. This formula represents the frequency of individuals carrying one copy of each allele."
+  },
+  {
+    "id": 4,
+    "question": "Which of the following is NOT one of the conditions required for Hardy-Weinberg equilibrium?",
+    "options": [
+      "Large population size",
+      "Random mating",
+      "No natural selection",
+      "High mutation rate"
+    ],
+    "correctAnswer": "High mutation rate",
+    "category": "Genetics & Evolution",
+    "difficulty": "Easy",
+    "explanation": "Hardy-Weinberg equilibrium requires: large population (no genetic drift), random mating, no natural selection, no mutation, and no gene flow. A high mutation rate would violate the no-mutation condition and cause allele frequencies to shift."
+  },
+  {
+    "id": 5,
+    "question": "Which type of RNA carries the anticodon and delivers amino acids to the ribosome during translation?",
+    "options": [
+      "mRNA",
+      "rRNA",
+      "tRNA",
+      "snRNA"
+    ],
+    "correctAnswer": "tRNA",
+    "category": "Molecular Biology",
+    "difficulty": "Easy",
+    "explanation": "Transfer RNA (tRNA) contains a three-nucleotide anticodon sequence that base-pairs with the complementary codon on mRNA. Each tRNA is charged with a specific amino acid and delivers it to the ribosome during translation."
+  }
+]
