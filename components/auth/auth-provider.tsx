@@ -25,7 +25,7 @@ interface AuthContextValue {
   signOut: () => void;
 }
 
-const STORAGE_KEY = "studyrx_auth_session";
+const STORAGE_KEY = "learnza_auth_session";
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 

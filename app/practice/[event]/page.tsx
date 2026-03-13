@@ -344,7 +344,7 @@ function PracticeContent({ eventId }: { eventId: string }) {
 
   const handleEndSession = async () => {
     if (!sessionData) {
-      router.push("/events");
+      router.push("/courses");
       return;
     }
 
@@ -352,6 +352,7 @@ function PracticeContent({ eventId }: { eventId: string }) {
     setSessionSaveError(null);
 
     const attemptsWithFinalExplanation = [...sessionData.attempts];
+
 
     if (isAnswered && explanationStartedAtRef.current !== null && attemptsWithFinalExplanation.length > 0) {
       if (explanationHiddenStartRef.current !== null) {
@@ -430,16 +431,16 @@ function PracticeContent({ eventId }: { eventId: string }) {
       <div className="flex-1 flex items-center justify-center p-8">
         <Card className="max-w-md">
           <CardHeader>
-            <CardTitle>Event Not Found</CardTitle>
+            <CardTitle>Course Not Found</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              The event you're looking for doesn't exist or couldn't be loaded.
+              The course you{"'"}re looking for doesn{"'"}t exist or couldn{"'"}t be loaded.
             </p>
             <Button asChild>
-              <Link href="/events">
+              <Link href="/courses">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Events
+                Back to Courses
               </Link>
             </Button>
           </CardContent>
@@ -460,9 +461,9 @@ function PracticeContent({ eventId }: { eventId: string }) {
             asChild
             className="mb-4"
           >
-            <Link href="/events">
+            <Link href="/courses">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Events
+              Back to Courses
             </Link>
           </Button>
           
@@ -554,7 +555,7 @@ function PracticeContent({ eventId }: { eventId: string }) {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="p-8 bg-gradient-to-br from-primary/10 to-accent/10 rounded-xl text-center border border-primary/20">
-                <h3 className="text-3xl font-bold mb-3">Event Complete</h3>
+                <h3 className="text-3xl font-bold mb-3">Course Complete</h3>
                 <p className="text-muted-foreground text-lg">
                   You've mastered all available questions. Keep reviewing to maintain your knowledge!
                 </p>
@@ -577,7 +578,7 @@ function PracticeContent({ eventId }: { eventId: string }) {
 
               <div className="flex gap-4">
                 <Button onClick={handleEndSession} size="lg" className="flex-1 h-14 text-base">
-                  Back to Events
+                  Back to Courses
                 </Button>
                 <Button onClick={handleRestart} variant="outline" size="lg" className="flex-1 h-14 text-base bg-transparent">
                   Practice Again
@@ -631,7 +632,7 @@ function PracticeContent({ eventId }: { eventId: string }) {
               </div>
 
               <div className="flex gap-3">
-                <Button className="flex-1" onClick={() => router.push("/events")}>Back to Events</Button>
+                <Button className="flex-1" onClick={() => router.push("/courses")}>Back to Courses</Button>
                 <Button variant="outline" className="flex-1 bg-transparent" onClick={handleRestart}>Practice Again</Button>
               </div>
             </CardContent>
@@ -648,7 +649,7 @@ function PracticeContent({ eventId }: { eventId: string }) {
                 size="sm"
                 onClick={() => {
                   if (confirm("End session? Progress will not be saved.")) {
-                    router.push("/events");
+                    router.push("/courses");
                   }
                 }}
               >

@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "question": "Which of the following is the inverse function of f(x) = 2x + 6?",
+    "options": [
+      "f⁻¹(x) = (x - 6) / 2",
+      "f⁻¹(x) = 2x - 6",
+      "f⁻¹(x) = (x + 6) / 2",
+      "f⁻¹(x) = x/2 + 6"
+    ],
+    "correctAnswer": "f⁻¹(x) = (x - 6) / 2",
+    "category": "Functions",
+    "difficulty": "Easy",
+    "explanation": "To find the inverse, swap x and y and solve for y. Starting with y = 2x + 6: swap to get x = 2y + 6, then solve: x - 6 = 2y, so y = (x - 6)/2. Therefore f⁻¹(x) = (x - 6)/2."
+  },
+  {
+    "id": 2,
+    "question": "What is the period of the function f(x) = 3 sin(2x - π)?",
+    "options": [
+      "π",
+      "2π",
+      "3π",
+      "π/2"
+    ],
+    "correctAnswer": "π",
+    "category": "Trigonometry",
+    "difficulty": "Medium",
+    "explanation": "For f(x) = A sin(Bx + C), the period is 2π/|B|. Here B = 2, so the period = 2π/2 = π. The amplitude (3) and phase shift (π/2) do not affect the period."
+  },
+  {
+    "id": 3,
+    "question": "Which of the following correctly describes end behavior for f(x) = -3x⁴ + 5x² - 2?",
+    "options": [
+      "As x → ±∞, f(x) → +∞",
+      "As x → ±∞, f(x) → -∞",
+      "As x → +∞, f(x) → +∞ and as x → -∞, f(x) → -∞",
+      "As x → +∞, f(x) → -∞ and as x → -∞, f(x) → +∞"
+    ],
+    "correctAnswer": "As x → ±∞, f(x) → -∞",
+    "category": "Polynomial Functions",
+    "difficulty": "Medium",
+    "explanation": "The leading term is -3x⁴. Since the degree is even (4) and the leading coefficient is negative (-3), both ends of the graph go downward. As x → +∞ or x → -∞, f(x) → -∞."
+  },
+  {
+    "id": 4,
+    "question": "Which of the following is equivalent to log₂(32)?",
+    "options": [
+      "4",
+      "5",
+      "6",
+      "3"
+    ],
+    "correctAnswer": "5",
+    "category": "Logarithmic Functions",
+    "difficulty": "Easy",
+    "explanation": "log₂(32) asks: to what power must 2 be raised to get 32? Since 2⁵ = 32, log₂(32) = 5."
+  },
+  {
+    "id": 5,
+    "question": "If sin(θ) = 3/5 and θ is in the first quadrant, what is cos(θ)?",
+    "options": [
+      "4/5",
+      "3/4",
+      "5/3",
+      "1/5"
+    ],
+    "correctAnswer": "4/5",
+    "category": "Trigonometry",
+    "difficulty": "Easy",
+    "explanation": "Using the Pythagorean identity: sin²(θ) + cos²(θ) = 1. So cos²(θ) = 1 - (3/5)² = 1 - 9/25 = 16/25. Since θ is in the first quadrant, cos(θ) is positive: cos(θ) = 4/5."
+  }
+]

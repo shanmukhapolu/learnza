@@ -1,6 +1,6 @@
-import { MessageSquareText, Pill, Smile, Heart, Apple } from "lucide-react";
+import { Globe, Dna, FlaskConical, Landmark, Calculator, TrendingUp } from "lucide-react";
 
-export interface HosaEvent {
+export interface ApCourse {
   id: string;
   name: string;
   description: string;
@@ -8,49 +8,67 @@ export interface HosaEvent {
   questionBankFile: string;
 }
 
-export const HOSA_EVENTS: HosaEvent[] = [
+export const AP_COURSES: ApCourse[] = [
   {
-    id: "medical-terminology",
-    name: "Medical Terminology",
-    description: "Test your knowledge of medical terms, prefixes, suffixes, and root words",
-    icon: MessageSquareText,
-    questionBankFile: "/questions/medical-terminology.json"
+    id: "ap-world",
+    name: "AP World History",
+    description: "Master global history from 1200 CE to the present — civilizations, trade, revolutions, and more",
+    icon: Globe,
+    questionBankFile: "/questions/ap-world.json",
   },
   {
-    id: "nutrition",
-    name: "Nutrition",
-    description: "Explore dietary principles, nutrients, and health-related nutrition concepts",
-    icon: Apple,
-    questionBankFile: "/questions/nutrition.json"
+    id: "ap-bio",
+    name: "AP Biology",
+    description: "Deep dive into cellular biology, genetics, evolution, ecology, and biological systems",
+    icon: Dna,
+    questionBankFile: "/questions/ap-bio.json",
   },
   {
-    id: "pharmacology",
-    name: "Pharmacology",
-    description: "Study medications, drug interactions, and pharmaceutical principles",
-    icon: Pill,
-    questionBankFile: "/questions/pharmacology.json"
+    id: "ap-chem",
+    name: "AP Chemistry",
+    description: "Explore atomic structure, bonding, thermodynamics, kinetics, and chemical equilibria",
+    icon: FlaskConical,
+    questionBankFile: "/questions/ap-chem.json",
   },
   {
-    id: "dental-terminology",
-    name: "Dental Terminology",
-    description: "Master dental-specific terms, procedures, and oral health vocabulary",
-    icon: Smile,
-    questionBankFile: "/questions/dental-terminology.json"
+    id: "ap-euro",
+    name: "AP European History",
+    description: "Survey European history from the Renaissance through the modern era — politics, culture, and society",
+    icon: Landmark,
+    questionBankFile: "/questions/ap-euro.json",
   },
   {
-    id: "behavioral-health",
-    name: "Behavioral Health",
-    description: "Learn about mental health conditions, treatments, and psychological concepts",
-    icon: Heart,
-    questionBankFile: "/questions/behavioral-health.json"
-  }
+    id: "ap-precalc",
+    name: "AP Precalculus",
+    description: "Build foundational skills in functions, polynomials, trigonometry, and mathematical reasoning",
+    icon: Calculator,
+    questionBankFile: "/questions/ap-precalc.json",
+  },
+  {
+    id: "ap-macro",
+    name: "AP Macroeconomics",
+    description: "Understand national economies, fiscal policy, monetary systems, GDP, and international trade",
+    icon: TrendingUp,
+    questionBankFile: "/questions/ap-macro.json",
+  },
 ];
 
-export function getEventById(eventId: string): HosaEvent | undefined {
-  return HOSA_EVENTS.find(event => event.id === eventId);
+// Legacy alias so existing imports still resolve
+export const HOSA_EVENTS = AP_COURSES;
+
+export function getCourseById(courseId: string): ApCourse | undefined {
+  return AP_COURSES.find((course) => course.id === courseId);
+}
+
+export function getEventById(eventId: string): ApCourse | undefined {
+  return getCourseById(eventId);
+}
+
+export function getCourseName(courseId: string): string {
+  const course = getCourseById(courseId);
+  return course?.name || courseId;
 }
 
 export function getEventName(eventId: string): string {
-  const event = getEventById(eventId);
-  return event?.name || eventId;
+  return getCourseName(eventId);
 }

@@ -1,0 +1,62 @@
+[
+  {
+    "id": "macro-1",
+    "question": "Which of the following best describes GDP?",
+    "options": [
+      "The total value of all goods and services produced in a country in a given year",
+      "The total value of exports minus imports",
+      "The total income earned by citizens abroad",
+      "The total government spending on public services"
+    ],
+    "correctAnswer": 0,
+    "explanation": "GDP (Gross Domestic Product) measures the total monetary value of all final goods and services produced within a country's borders during a specific time period."
+  },
+  {
+    "id": "macro-2",
+    "question": "When the Federal Reserve raises the federal funds rate, what is the most likely effect?",
+    "options": [
+      "Decreased borrowing costs stimulate consumer spending",
+      "Increased borrowing costs slow spending and reduce inflation",
+      "The money supply automatically increases",
+      "Government tax revenue rises immediately"
+    ],
+    "correctAnswer": 1,
+    "explanation": "Raising the federal funds rate increases the cost of borrowing for banks and consumers, which reduces spending and investment, thereby cooling inflationary pressure."
+  },
+  {
+    "id": "macro-3",
+    "question": "Which of the following is an example of expansionary fiscal policy?",
+    "options": [
+      "Raising income tax rates",
+      "Reducing government spending on infrastructure",
+      "Increasing government spending on public works programs",
+      "Selling government bonds to the public"
+    ],
+    "correctAnswer": 2,
+    "explanation": "Expansionary fiscal policy involves increasing government spending or cutting taxes to stimulate economic activity and increase aggregate demand."
+  },
+  {
+    "id": "macro-4",
+    "question": "The Phillips Curve illustrates the relationship between:",
+    "options": [
+      "Interest rates and inflation",
+      "Unemployment and inflation",
+      "GDP and government spending",
+      "Exports and imports"
+    ],
+    "correctAnswer": 1,
+    "explanation": "The Phillips Curve shows an inverse short-run relationship between unemployment and inflation — as unemployment falls, inflation tends to rise, and vice versa."
+  },
+  {
+    "id": "macro-5",
+    "question": "If the marginal propensity to consume (MPC) is 0.8, what is the spending multiplier?",
+    "options": [
+      "2",
+      "4",
+      "5",
+      "8"
+    ],
+    "correctAnswer": 2,
+    "explanation": "The spending multiplier = 1 / (1 - MPC) = 1 / (1 - 0.8) = 1 / 0.2 = 5. This means each dollar of new spending creates $5 of total economic activity."
+  }
+]
