@@ -200,24 +200,59 @@ async function dbGet<T>(path: string, fallback: T): Promise<T> {
 async function dbSet(path: string, value: unknown) {
   if (typeof window === "undefined") return;
   let request = await getUserPath(path);
-  let res = await fetch(request.url, {
-    method: "PUT",
+  
+  // Use PATCH for nested paths to avoid 404 errors when parent doesn't exist
+  const method = path.includes("/") ? "PATCH" : "PUT";
+  
+  // For PATCH requests on nested paths, we need to wrap the value
+  let body: string;
+  let url = request.url;
+  
+  if (method === "PATCH" && path.includes("/")) {
+    // Get the last segment as the key
+    const segments = path.split("/");
+    const lastKey = segments.pop()!;
+    const parentPath = segments.join("/");
+    
+    // Update URL to parent path and wrap value with key
+    const parentRequest = await getUserPath(parentPath);
+    url = parentRequest.url;
+    body = JSON.stringify({ [lastKey]: value });
+  } else {
+    body = JSON.stringify(value);
+  }
+  
+  let res = await fetch(url, {
+    method,
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${request.idToken}`,
     },
-    body: JSON.stringify(value),
+    body,
   });
 
   if (res.status === 401 || res.status === 403) {
     request = await getUserPath(path, { forceRefresh: true });
-    res = await fetch(request.url, {
-      method: "PUT",
+    
+    if (method === "PATCH" && path.includes("/")) {
+      const segments = path.split("/");
+      const lastKey = segments.pop()!;
+      const parentPath = segments.join("/");
+      const parentRequest = await getUserPath(parentPath, { forceRefresh: true });
+      url = parentRequest.url;
+      body = JSON.stringify({ [lastKey]: value });
+    } else {
+      url = request.url;
+      body = JSON.stringify(value);
+    }
+    
+    res = await fetch(url, {
+      method,
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${request.idToken}`,
       },
-      body: JSON.stringify(value),
+      body,
     });
   }
 
@@ -489,6 +524,32 @@ export const storage = {
       await dbSet("currentSession", null);
     } catch {
       // Optional runtime key might be blocked by stricter DB rules.
+    }
+  },
+
+  // User's added courses (for sidebar)
+  getAddedCourses: async (): Promise<string[]> => {
+    const courses = await dbGet<string[] | null>("addedCourses", null);
+    return courses ?? [];
+  },
+
+  addCourse: async (courseId: string) => {
+    try {
+      const current = await storage.getAddedCourses();
+      if (!current.includes(courseId)) {
+        await dbSet("addedCourses", [...current, courseId]);
+      }
+    } catch (error) {
+      console.warn("Unable to add course", error);
+    }
+  },
+
+  removeCourse: async (courseId: string) => {
+    try {
+      const current = await storage.getAddedCourses();
+      await dbSet("addedCourses", current.filter(id => id !== courseId));
+    } catch (error) {
+      console.warn("Unable to remove course", error);
     }
   },
 };

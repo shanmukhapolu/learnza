@@ -155,7 +155,7 @@ export default function DashboardPage() {
                         <Link href="/courses">Start Practice</Link>
                       </Button>
                       <Button asChild variant="outline" className="font-semibold">
-                        <Link href="/analytics">Open Analytics</Link>
+                        <Link href="/courses">Explore Courses</Link>
                       </Button>
                     </CardContent>
                   </Card>
@@ -296,8 +296,8 @@ export default function DashboardPage() {
                         {
                           num: "2",
                           color: "bg-accent/12 text-accent",
-                          title: "Review Analytics",
-                          sub: "Use the analytics page to monitor per-course accuracy and identify areas for improvement",
+                          title: "Track Your Progress",
+                          sub: "Check the Progress tab in each course to monitor your accuracy and identify areas for improvement",
                         },
                         {
                           num: "3",
