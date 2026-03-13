@@ -53,7 +53,7 @@ export const AP_COURSES: ApCourse[] = [
   },
 ];
 
-// Legacy aliases so existing imports still resolve
+// Legacy alias so existing imports still resolve
 export const HOSA_EVENTS = AP_COURSES;
 
 export function getCourseById(courseId: string): ApCourse | undefined {
