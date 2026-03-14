@@ -1,0 +1,72 @@
+{
+  "rules": {
+    "users": {
+      "$userId": {
+        // Only the authenticated user can read/write their own data
+        ".read": "auth != null && auth.uid === $userId",
+        ".write": "auth != null && auth.uid === $userId",
+        
+        "events": {
+          "$eventId": {
+            ".validate": "newData.hasChildren()",
+            
+            "sessions": {
+              "$sessionId": {
+                ".validate": "newData.hasChild('timestamp') && newData.hasChild('correct') && newData.hasChild('total')",
+                
+                "timestamp": {
+                  ".validate": "newData.isNumber()"
+                },
+                "correct": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0"
+                },
+                "total": {
+                  ".validate": "newData.isNumber() && newData.val() >= 1"
+                },
+                "questions": {
+                  "$questionIndex": {
+                    ".validate": "newData.hasChild('questionId') && newData.hasChild('isCorrect')",
+                    "questionId": {
+                      ".validate": "newData.isString()"
+                    },
+                    "isCorrect": {
+                      ".validate": "newData.isBoolean()"
+                    },
+                    "selectedAnswer": {
+                      ".validate": "newData.isNumber()"
+                    }
+                  }
+                }
+              }
+            },
+            
+            "accuracy": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+            },
+            "lastPracticed": {
+              ".validate": "newData.isNumber()"
+            },
+            "questionsAttempted": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "correctAnswers": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            }
+          }
+        },
+        
+        "addedCourses": {
+          ".validate": "newData.isString() || (newData.hasChildren() && newData.val().length <= 20)",
+          "$index": {
+            ".validate": "newData.isString()"
+          }
+        },
+        
+        "currentSession": {
+          // Optional runtime state - can be any structure or null
+          ".validate": true
+        }
+      }
+    }
+  }
+}
