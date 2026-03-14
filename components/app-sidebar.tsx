@@ -19,7 +19,7 @@ import {
   SidebarMenuSubButton,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { storage } from "@/lib/storage";
+import { storage, storageEvents } from "@/lib/storage";
 import { getCourseById } from "@/lib/events";
 
 export function AppSidebar() {
@@ -32,15 +32,19 @@ export function AppSidebar() {
   const [addedCourses, setAddedCourses] = useState<string[]>([]);
 
   useEffect(() => {
+    let cancelled = false;
     const loadCourses = async () => {
       const courses = await storage.getAddedCourses();
-      setAddedCourses(courses);
+      if (!cancelled) setAddedCourses(courses);
     };
     loadCourses();
 
-    // Re-load courses when storage changes (simple polling for now)
-    const interval = setInterval(loadCourses, 2000);
-    return () => clearInterval(interval);
+    // Re-fetch whenever addCourse / removeCourse is called anywhere
+    storageEvents.on("addedCourses", loadCourses);
+    return () => {
+      cancelled = true;
+      storageEvents.off("addedCourses", loadCourses);
+    };
   }, []);
 
   const mainNavItems = [
