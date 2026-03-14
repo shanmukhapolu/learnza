@@ -223,14 +223,11 @@ function fromFsDoc(doc: any): Record<string, any> | null {
 /** GET a single Firestore document. Returns null if not found. */
 async function fsGet(docPath: string): Promise<Record<string, any> | null> {
   let auth = await getAuth();
-  let res = await fetch(`${FS}/${docPath}`, {
-    headers: { Authorization: `Bearer ${auth.idToken}` },
-  });
+  // Use access_token query param instead of Bearer header (Firebase ID tokens work this way)
+  let res = await fetch(`${FS}/${docPath}?access_token=${encodeURIComponent(auth.idToken)}`);
   if (res.status === 401 || res.status === 403) {
     auth = await getAuth({ forceRefresh: true });
-    res = await fetch(`${FS}/${docPath}`, {
-      headers: { Authorization: `Bearer ${auth.idToken}` },
-    });
+    res = await fetch(`${FS}/${docPath}?access_token=${encodeURIComponent(auth.idToken)}`);
   }
   if (res.status === 404) return null;
   if (!res.ok) return null;
@@ -242,23 +239,29 @@ async function fsPatch(docPath: string, data: Record<string, any>): Promise<void
   const fields: Record<string, any> = {};
   for (const [k, v] of Object.entries(data)) fields[k] = toFsValue(v);
 
-  const mask = Object.keys(fields)
-    .map((f) => `updateMask.fieldPaths=${encodeURIComponent(f)}`)
-    .join("&");
-
   const body = JSON.stringify({ fields });
 
   let auth = await getAuth();
-  let res = await fetch(`${FS}/${docPath}?${mask}`, {
+  // Build URL with access_token and field masks
+  const buildUrl = (token: string) => {
+    const url = new URL(`${FS}/${docPath}`);
+    url.searchParams.set("access_token", token);
+    for (const f of Object.keys(fields)) {
+      url.searchParams.append("updateMask.fieldPaths", f);
+    }
+    return url.toString();
+  };
+
+  let res = await fetch(buildUrl(auth.idToken), {
     method: "PATCH",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.idToken}` },
+    headers: { "Content-Type": "application/json" },
     body,
   });
   if (res.status === 401 || res.status === 403) {
     auth = await getAuth({ forceRefresh: true });
-    res = await fetch(`${FS}/${docPath}?${mask}`, {
+    res = await fetch(buildUrl(auth.idToken), {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.idToken}` },
+      headers: { "Content-Type": "application/json" },
       body,
     });
   }
@@ -271,14 +274,11 @@ async function fsPatch(docPath: string, data: Record<string, any>): Promise<void
 /** List documents in a Firestore collection. Returns array of plain objects. */
 async function fsList(collectionPath: string): Promise<Array<Record<string, any>>> {
   let auth = await getAuth();
-  let res = await fetch(`${FS}/${collectionPath}`, {
-    headers: { Authorization: `Bearer ${auth.idToken}` },
-  });
+  // Use access_token query param instead of Bearer header
+  let res = await fetch(`${FS}/${collectionPath}?access_token=${encodeURIComponent(auth.idToken)}`);
   if (res.status === 401 || res.status === 403) {
     auth = await getAuth({ forceRefresh: true });
-    res = await fetch(`${FS}/${collectionPath}`, {
-      headers: { Authorization: `Bearer ${auth.idToken}` },
-    });
+    res = await fetch(`${FS}/${collectionPath}?access_token=${encodeURIComponent(auth.idToken)}`);
   }
   if (!res.ok) return [];
   const json = await res.json();
