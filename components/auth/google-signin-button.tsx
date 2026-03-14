@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 
 declare global {
   interface Window {
     google?: any;
+    __gsiInitialized?: boolean;
   }
 }
 
@@ -14,24 +15,32 @@ export function GoogleSignInButton({
   onCredential: (credential: string) => void;
 }) {
   const buttonRef = useRef<HTMLDivElement | null>(null);
-
+  const callbackRef = useRef(onCredential);
+  
+  // Keep callback ref updated
   useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-      if (!window.google || !buttonRef.current) return;
+    callbackRef.current = onCredential;
+  }, [onCredential]);
 
+  const initializeGoogle = useCallback(() => {
+    if (!window.google || !buttonRef.current) return;
+
+    // Only initialize once globally
+    if (!window.__gsiInitialized) {
       window.google.accounts.id.initialize({
         client_id: "351034184858-u1loq1af6v2kjo6h3po6r5qhjfhuog74.apps.googleusercontent.com",
         callback: (response: { credential?: string }) => {
           if (response.credential) {
-            onCredential(response.credential);
+            callbackRef.current(response.credential);
           }
         },
       });
+      window.__gsiInitialized = true;
+    }
 
+    // Clear and re-render button
+    if (buttonRef.current) {
+      buttonRef.current.innerHTML = "";
       window.google.accounts.id.renderButton(buttonRef.current, {
         theme: "outline",
         size: "large",
@@ -39,13 +48,33 @@ export function GoogleSignInButton({
         text: "continue_with",
         shape: "pill",
       });
-    };
+    }
+  }, []);
+
+  useEffect(() => {
+    // Check if script already exists
+    const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+    
+    if (existingScript) {
+      // Script already loaded, just initialize
+      if (window.google) {
+        initializeGoogle();
+      } else {
+        existingScript.addEventListener("load", initializeGoogle);
+      }
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = initializeGoogle;
 
     document.body.appendChild(script);
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, [onCredential]);
+    
+    // Don't remove script on cleanup - it should persist
+  }, [initializeGoogle]);
 
   return <div ref={buttonRef} className="w-full flex justify-center" />;
 }
