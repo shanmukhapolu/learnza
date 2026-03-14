@@ -1,5 +1,7 @@
-import { FIREBASE_DATABASE_URL } from "@/lib/firebase-config";
+import { FIREBASE_PROJECT_ID } from "@/lib/firebase-config";
 import { refreshIdToken } from "@/lib/firebase-auth-rest";
+
+const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
 
 export interface Question {
   id: number;
@@ -163,11 +165,67 @@ async function getUserPath(path: string, options?: { forceRefresh?: boolean }) {
     throw new Error("Not authenticated");
   }
 
+  // Convert path like "events/ap-world/sessions/session_123" to Firestore format
+  const firestorePath = path ? `users/${auth.user.uid}/${path}` : `users/${auth.user.uid}`;
+
   return {
-    url: `${FIREBASE_DATABASE_URL}/users/${auth.user.uid}/${path}.json?auth=${encodeURIComponent(auth.idToken)}`,
+    url: `${FIRESTORE_BASE}/${firestorePath}`,
     uid: auth.user.uid,
     idToken: auth.idToken,
   };
+}
+
+// Convert Firestore document format to plain JS object
+function fromFirestoreValue(value: any): any {
+  if (value === null || value === undefined) return null;
+  if (value.stringValue !== undefined) return value.stringValue;
+  if (value.integerValue !== undefined) return parseInt(value.integerValue, 10);
+  if (value.doubleValue !== undefined) return value.doubleValue;
+  if (value.booleanValue !== undefined) return value.booleanValue;
+  if (value.nullValue !== undefined) return null;
+  if (value.timestampValue !== undefined) return value.timestampValue;
+  if (value.arrayValue !== undefined) {
+    return (value.arrayValue.values || []).map(fromFirestoreValue);
+  }
+  if (value.mapValue !== undefined) {
+    const result: Record<string, any> = {};
+    for (const [k, v] of Object.entries(value.mapValue.fields || {})) {
+      result[k] = fromFirestoreValue(v);
+    }
+    return result;
+  }
+  return value;
+}
+
+// Convert plain JS value to Firestore format
+function toFirestoreValue(value: any): any {
+  if (value === null || value === undefined) return { nullValue: null };
+  if (typeof value === "string") return { stringValue: value };
+  if (typeof value === "number") {
+    return Number.isInteger(value) ? { integerValue: String(value) } : { doubleValue: value };
+  }
+  if (typeof value === "boolean") return { booleanValue: value };
+  if (Array.isArray(value)) {
+    return { arrayValue: { values: value.map(toFirestoreValue) } };
+  }
+  if (typeof value === "object") {
+    const fields: Record<string, any> = {};
+    for (const [k, v] of Object.entries(value)) {
+      fields[k] = toFirestoreValue(v);
+    }
+    return { mapValue: { fields } };
+  }
+  return { stringValue: String(value) };
+}
+
+// Convert Firestore document to plain object
+function fromFirestoreDocument(doc: any): any {
+  if (!doc?.fields) return null;
+  const result: Record<string, any> = {};
+  for (const [k, v] of Object.entries(doc.fields)) {
+    result[k] = fromFirestoreValue(v);
+  }
+  return result;
 }
 
 async function dbGet<T>(path: string, fallback: T): Promise<T> {
@@ -190,7 +248,8 @@ async function dbGet<T>(path: string, fallback: T): Promise<T> {
     }
 
     if (!res.ok) return fallback;
-    const data = await res.json();
+    const doc = await res.json();
+    const data = fromFirestoreDocument(doc);
     return (data ?? fallback) as T;
   } catch {
     return fallback;
@@ -201,58 +260,44 @@ async function dbSet(path: string, value: unknown) {
   if (typeof window === "undefined") return;
   let request = await getUserPath(path);
   
-  // Use PATCH for nested paths to avoid 404 errors when parent doesn't exist
-  const method = path.includes("/") ? "PATCH" : "PUT";
+  // Convert value to Firestore document format
+  const firestoreDoc = {
+    fields: {} as Record<string, any>,
+  };
   
-  // For PATCH requests on nested paths, we need to wrap the value
-  let body: string;
-  let url = request.url;
-  
-  if (method === "PATCH" && path.includes("/")) {
-    // Get the last segment as the key
-    const segments = path.split("/");
-    const lastKey = segments.pop()!;
-    const parentPath = segments.join("/");
-    
-    // Update URL to parent path and wrap value with key
-    const parentRequest = await getUserPath(parentPath);
-    url = parentRequest.url;
-    body = JSON.stringify({ [lastKey]: value });
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    // If value is an object, spread its fields
+    for (const [k, v] of Object.entries(value as Record<string, any>)) {
+      firestoreDoc.fields[k] = toFirestoreValue(v);
+    }
   } else {
-    body = JSON.stringify(value);
+    // For primitive values or arrays, wrap in a "value" field
+    firestoreDoc.fields.value = toFirestoreValue(value);
   }
   
-  let res = await fetch(url, {
-    method,
+  // Build update mask from all field paths
+  const fieldPaths = Object.keys(firestoreDoc.fields);
+  const updateMask = fieldPaths.map(f => `updateMask.fieldPaths=${encodeURIComponent(f)}`).join("&");
+  
+  // Use PATCH to create or update document
+  let res = await fetch(`${request.url}?${updateMask}`, {
+    method: "PATCH",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${request.idToken}`,
     },
-    body,
+    body: JSON.stringify(firestoreDoc),
   });
 
   if (res.status === 401 || res.status === 403) {
     request = await getUserPath(path, { forceRefresh: true });
-    
-    if (method === "PATCH" && path.includes("/")) {
-      const segments = path.split("/");
-      const lastKey = segments.pop()!;
-      const parentPath = segments.join("/");
-      const parentRequest = await getUserPath(parentPath, { forceRefresh: true });
-      url = parentRequest.url;
-      body = JSON.stringify({ [lastKey]: value });
-    } else {
-      url = request.url;
-      body = JSON.stringify(value);
-    }
-    
-    res = await fetch(url, {
-      method,
+    res = await fetch(`${request.url}?${updateMask}`, {
+      method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${request.idToken}`,
       },
-      body,
+      body: JSON.stringify(firestoreDoc),
     });
   }
 

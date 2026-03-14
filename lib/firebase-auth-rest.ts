@@ -1,4 +1,4 @@
-import { FIREBASE_API_KEY, FIREBASE_DATABASE_URL } from "@/lib/firebase-config";
+import { FIREBASE_API_KEY, FIREBASE_PROJECT_ID } from "@/lib/firebase-config";
 
 export interface AuthUser {
   uid: string;
@@ -20,7 +20,7 @@ export interface UserProfile {
 
 const AUTH_BASE = "https://identitytoolkit.googleapis.com/v1";
 const SECURE_TOKEN_BASE = "https://securetoken.googleapis.com/v1";
-const RTDB_BASE = FIREBASE_DATABASE_URL;
+const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
@@ -146,12 +146,20 @@ export async function refreshIdToken(refreshToken: string) {
 export async function saveUserProfile(idToken: string, uid: string, profile: UserProfile) {
   const fullName = `${profile.firstName} ${profile.lastName}`.trim();
 
-  const nameRes = await fetch(`${RTDB_BASE}/users/${uid}/name.json?auth=${encodeURIComponent(idToken)}`, {
-    method: "PUT",
+  // Use Firestore REST API to save user profile
+  const nameRes = await fetch(`${FIRESTORE_BASE}/users/${uid}?updateMask.fieldPaths=name&updateMask.fieldPaths=firstName&updateMask.fieldPaths=lastName`, {
+    method: "PATCH",
     headers: {
       "Content-Type": "application/json",
+      "Authorization": `Bearer ${idToken}`,
     },
-    body: JSON.stringify(fullName),
+    body: JSON.stringify({
+      fields: {
+        name: { stringValue: fullName },
+        firstName: { stringValue: profile.firstName },
+        lastName: { stringValue: profile.lastName },
+      },
+    }),
   });
 
   if (!nameRes.ok) {
@@ -161,27 +169,40 @@ export async function saveUserProfile(idToken: string, uid: string, profile: Use
 }
 
 export async function getUserProfile(idToken: string, uid: string): Promise<UserProfile | null> {
-  const nameRes = await fetch(`${RTDB_BASE}/users/${uid}/name.json?auth=${encodeURIComponent(idToken)}`);
+  // Use Firestore REST API to get user profile
+  const nameRes = await fetch(`${FIRESTORE_BASE}/users/${uid}`, {
+    headers: {
+      "Authorization": `Bearer ${idToken}`,
+    },
+  });
+  
   if (!nameRes.ok) {
     return null;
   }
 
-  const nameData = await nameRes.json();
-  if (!nameData) {
+  const data = await nameRes.json();
+  if (!data?.fields) {
     return null;
   }
 
-  if (typeof nameData === "string") {
-    const [firstName = "", ...rest] = nameData.trim().split(/\s+/);
+  const fields = data.fields;
+  
+  // Check for firstName/lastName fields first
+  if (fields.firstName?.stringValue || fields.lastName?.stringValue) {
+    return {
+      firstName: fields.firstName?.stringValue || "",
+      lastName: fields.lastName?.stringValue || "",
+    };
+  }
+
+  // Fallback: parse from full name field
+  if (fields.name?.stringValue) {
+    const [firstName = "", ...rest] = fields.name.stringValue.trim().split(/\s+/);
     return {
       firstName,
       lastName: rest.join(" "),
     };
   }
 
-  // Legacy compatibility in case older data used object shape.
-  return {
-    firstName: nameData.firstName || "",
-    lastName: nameData.lastName || "",
-  };
+  return null;
 }
