@@ -1,4 +1,4 @@
-import { FIREBASE_API_KEY, FIREBASE_PROJECT_ID } from "@/lib/firebase-config";
+import { FIREBASE_API_KEY, FIREBASE_DATABASE_URL } from "@/lib/firebase-config";
 
 export interface AuthUser {
   uid: string;
@@ -20,7 +20,7 @@ export interface UserProfile {
 
 const AUTH_BASE = "https://identitytoolkit.googleapis.com/v1";
 const SECURE_TOKEN_BASE = "https://securetoken.googleapis.com/v1";
-const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
+const RTDB = FIREBASE_DATABASE_URL;
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
@@ -146,63 +146,48 @@ export async function refreshIdToken(refreshToken: string) {
 export async function saveUserProfile(idToken: string, uid: string, profile: UserProfile) {
   const fullName = `${profile.firstName} ${profile.lastName}`.trim();
 
-  // Use Firestore REST API with Firebase ID token as query param (not Bearer token)
-  // Firebase ID tokens work when passed via access_token query param
-  const url = new URL(`${FIRESTORE_BASE}/users/${uid}`);
-  url.searchParams.set("access_token", idToken);
-  url.searchParams.set("updateMask.fieldPaths", "name");
-  url.searchParams.append("updateMask.fieldPaths", "firstName");
-  url.searchParams.append("updateMask.fieldPaths", "lastName");
-
-  const nameRes = await fetch(url.toString(), {
+  // Use Firebase Realtime Database REST API with auth token
+  const res = await fetch(`${RTDB}/users/${uid}/profile.json?auth=${encodeURIComponent(idToken)}`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      fields: {
-        name: { stringValue: fullName },
-        firstName: { stringValue: profile.firstName },
-        lastName: { stringValue: profile.lastName },
-      },
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      name: fullName,
+      updatedAt: new Date().toISOString(),
     }),
   });
 
-  if (!nameRes.ok) {
-    const text = await nameRes.text().catch(() => "");
-    throw new Error(`Failed to save display name: ${nameRes.status} ${text}`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Failed to save display name: ${res.status} ${text}`);
   }
 }
 
 export async function getUserProfile(idToken: string, uid: string): Promise<UserProfile | null> {
-  // Use Firestore REST API with Firebase ID token as query param
-  const url = new URL(`${FIRESTORE_BASE}/users/${uid}`);
-  url.searchParams.set("access_token", idToken);
-
-  const nameRes = await fetch(url.toString());
+  // Use Firebase Realtime Database REST API
+  const res = await fetch(`${RTDB}/users/${uid}/profile.json?auth=${encodeURIComponent(idToken)}`);
   
-  if (!nameRes.ok) {
+  if (!res.ok) {
     return null;
   }
 
-  const data = await nameRes.json();
-  if (!data?.fields) {
+  const data = await res.json();
+  if (!data) {
     return null;
   }
 
-  const fields = data.fields;
-  
   // Check for firstName/lastName fields first
-  if (fields.firstName?.stringValue || fields.lastName?.stringValue) {
+  if (data.firstName || data.lastName) {
     return {
-      firstName: fields.firstName?.stringValue || "",
-      lastName: fields.lastName?.stringValue || "",
+      firstName: data.firstName || "",
+      lastName: data.lastName || "",
     };
   }
 
   // Fallback: parse from full name field
-  if (fields.name?.stringValue) {
-    const [firstName = "", ...rest] = fields.name.stringValue.trim().split(/\s+/);
+  if (data.name) {
+    const [firstName = "", ...rest] = data.name.trim().split(/\s+/);
     return {
       firstName,
       lastName: rest.join(" "),

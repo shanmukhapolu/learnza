@@ -1,8 +1,18 @@
-import { FIREBASE_PROJECT_ID } from "@/lib/firebase-config";
+import { FIREBASE_DATABASE_URL } from "@/lib/firebase-config";
 import { refreshIdToken } from "@/lib/firebase-auth-rest";
 
-// Firestore REST base
-const FS = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
+// ---------------------------------------------------------------------------
+// Firebase Realtime Database REST API
+// 
+// Database Schema:
+// /users/{uid}/
+//     profile/           - User profile info (name, email, etc.)
+//     preferences/       - User preferences (addedCourses, settings)
+//     sessions/{id}      - Practice session data
+//     progress/{eventId} - Progress data per course (wrong questions, completed)
+// ---------------------------------------------------------------------------
+
+const RTDB = FIREBASE_DATABASE_URL;
 
 // ---------------------------------------------------------------------------
 // Simple pub/sub for cross-component reactivity (e.g. sidebar ↔ courses page)
@@ -176,119 +186,70 @@ async function getAuth(options?: { forceRefresh?: boolean }) {
 }
 
 // ---------------------------------------------------------------------------
-// Firestore value converters
-// ---------------------------------------------------------------------------
-function fromFsValue(v: any): any {
-  if (v === null || v === undefined) return null;
-  if (v.stringValue !== undefined) return v.stringValue;
-  if (v.integerValue !== undefined) return parseInt(v.integerValue, 10);
-  if (v.doubleValue !== undefined) return v.doubleValue;
-  if (v.booleanValue !== undefined) return v.booleanValue;
-  if (v.nullValue !== undefined) return null;
-  if (v.timestampValue !== undefined) return v.timestampValue;
-  if (v.arrayValue !== undefined) return (v.arrayValue.values ?? []).map(fromFsValue);
-  if (v.mapValue !== undefined) {
-    const out: Record<string, any> = {};
-    for (const [k, val] of Object.entries(v.mapValue.fields ?? {})) out[k] = fromFsValue(val);
-    return out;
-  }
-  return v;
-}
-
-function toFsValue(v: any): any {
-  if (v === null || v === undefined) return { nullValue: null };
-  if (typeof v === "string") return { stringValue: v };
-  if (typeof v === "boolean") return { booleanValue: v };
-  if (typeof v === "number") return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
-  if (Array.isArray(v)) return { arrayValue: { values: v.map(toFsValue) } };
-  if (typeof v === "object") {
-    const fields: Record<string, any> = {};
-    for (const [k, val] of Object.entries(v)) fields[k] = toFsValue(val);
-    return { mapValue: { fields } };
-  }
-  return { stringValue: String(v) };
-}
-
-function fromFsDoc(doc: any): Record<string, any> | null {
-  if (!doc?.fields) return null;
-  const out: Record<string, any> = {};
-  for (const [k, v] of Object.entries(doc.fields)) out[k] = fromFsValue(v);
-  return out;
-}
-
-// ---------------------------------------------------------------------------
-// Low-level REST helpers
+// Firebase Realtime Database REST helpers
 // ---------------------------------------------------------------------------
 
-/** GET a single Firestore document. Returns null if not found. */
-async function fsGet(docPath: string): Promise<Record<string, any> | null> {
+/** GET data from a path. Returns null if not found. */
+async function rtdbGet<T>(path: string): Promise<T | null> {
   let auth = await getAuth();
-  // Use access_token query param instead of Bearer header (Firebase ID tokens work this way)
-  let res = await fetch(`${FS}/${docPath}?access_token=${encodeURIComponent(auth.idToken)}`);
+  let res = await fetch(`${RTDB}/${path}.json?auth=${encodeURIComponent(auth.idToken)}`);
+  
   if (res.status === 401 || res.status === 403) {
     auth = await getAuth({ forceRefresh: true });
-    res = await fetch(`${FS}/${docPath}?access_token=${encodeURIComponent(auth.idToken)}`);
+    res = await fetch(`${RTDB}/${path}.json?auth=${encodeURIComponent(auth.idToken)}`);
   }
-  if (res.status === 404) return null;
+  
   if (!res.ok) return null;
-  return fromFsDoc(await res.json());
+  const data = await res.json();
+  return data as T;
 }
 
-/** PATCH (create/update) a Firestore document with explicit field mask. */
-async function fsPatch(docPath: string, data: Record<string, any>): Promise<void> {
-  const fields: Record<string, any> = {};
-  for (const [k, v] of Object.entries(data)) fields[k] = toFsValue(v);
-
-  const body = JSON.stringify({ fields });
-
+/** PUT data to a path (overwrites). */
+async function rtdbPut(path: string, data: unknown): Promise<void> {
   let auth = await getAuth();
-  // Build URL with access_token and field masks
-  const buildUrl = (token: string) => {
-    const url = new URL(`${FS}/${docPath}`);
-    url.searchParams.set("access_token", token);
-    for (const f of Object.keys(fields)) {
-      url.searchParams.append("updateMask.fieldPaths", f);
-    }
-    return url.toString();
-  };
-
-  let res = await fetch(buildUrl(auth.idToken), {
-    method: "PATCH",
+  let res = await fetch(`${RTDB}/${path}.json?auth=${encodeURIComponent(auth.idToken)}`, {
+    method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body,
+    body: JSON.stringify(data),
   });
+  
   if (res.status === 401 || res.status === 403) {
     auth = await getAuth({ forceRefresh: true });
-    res = await fetch(buildUrl(auth.idToken), {
-      method: "PATCH",
+    res = await fetch(`${RTDB}/${path}.json?auth=${encodeURIComponent(auth.idToken)}`, {
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body,
+      body: JSON.stringify(data),
     });
   }
+  
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(`Firestore PATCH ${docPath} failed: ${res.status} ${text}`);
+    throw new Error(`RTDB PUT ${path} failed: ${res.status} ${text}`);
   }
 }
 
-/** List documents in a Firestore collection. Returns array of plain objects. */
-async function fsList(collectionPath: string): Promise<Array<Record<string, any>>> {
+/** PATCH data to a path (merges). */
+async function rtdbPatch(path: string, data: Record<string, unknown>): Promise<void> {
   let auth = await getAuth();
-  // Use access_token query param instead of Bearer header
-  let res = await fetch(`${FS}/${collectionPath}?access_token=${encodeURIComponent(auth.idToken)}`);
+  let res = await fetch(`${RTDB}/${path}.json?auth=${encodeURIComponent(auth.idToken)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  
   if (res.status === 401 || res.status === 403) {
     auth = await getAuth({ forceRefresh: true });
-    res = await fetch(`${FS}/${collectionPath}?access_token=${encodeURIComponent(auth.idToken)}`);
+    res = await fetch(`${RTDB}/${path}.json?auth=${encodeURIComponent(auth.idToken)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
   }
-  if (!res.ok) return [];
-  const json = await res.json();
-  if (!json?.documents) return [];
-  return (json.documents as any[]).map((d) => {
-    const obj = fromFsDoc(d) ?? {};
-    // Attach the document name (last segment = document ID)
-    obj.__id = (d.name as string).split("/").pop() ?? "";
-    return obj;
-  });
+  
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`RTDB PATCH ${path} failed: ${res.status} ${text}`);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -322,12 +283,14 @@ function normalizeAttempt(attempt: Partial<QuestionAttempt>, index: number, even
 function normalizeSession(session: Partial<SessionData>): SessionData {
   const event = session.event ?? session.eventId ?? "unknown";
 
-  // Deserialize attempts (they are stored as a JSON string in Firestore to avoid nested array limits)
   let rawAttempts: Partial<QuestionAttempt>[] = [];
   if (typeof (session as any).attempts === "string") {
     try { rawAttempts = JSON.parse((session as any).attempts); } catch { rawAttempts = []; }
   } else if (Array.isArray(session.attempts)) {
     rawAttempts = session.attempts;
+  } else if (session.attempts && typeof session.attempts === "object") {
+    // RTDB converts arrays to objects with numeric keys
+    rawAttempts = Object.values(session.attempts);
   }
 
   const attempts = rawAttempts.map((a, i) => normalizeAttempt(a, i, event));
@@ -351,6 +314,37 @@ function normalizeSession(session: Partial<SessionData>): SessionData {
   };
 }
 
+function computeStats(attempts: QuestionAttempt[]): UserStats {
+  const categoryStats: UserStats["categoryStats"] = {};
+  let totalTime = 0;
+  let correctAnswers = 0;
+
+  for (const attempt of attempts) {
+    totalTime += attempt.thinkTime;
+    if (attempt.isCorrect) correctAnswers++;
+
+    if (!categoryStats[attempt.category]) {
+      categoryStats[attempt.category] = { attempts: 0, correct: 0, averageTime: 0 };
+    }
+    categoryStats[attempt.category].attempts++;
+    if (attempt.isCorrect) categoryStats[attempt.category].correct++;
+    categoryStats[attempt.category].averageTime += attempt.thinkTime;
+  }
+
+  for (const cat of Object.keys(categoryStats)) {
+    if (categoryStats[cat].attempts > 0) {
+      categoryStats[cat].averageTime /= categoryStats[cat].attempts;
+    }
+  }
+
+  return {
+    totalAttempts: attempts.length,
+    correctAnswers,
+    averageTime: attempts.length > 0 ? totalTime / attempts.length : 0,
+    categoryStats,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Public storage API
 // ---------------------------------------------------------------------------
@@ -371,26 +365,18 @@ export const storage = {
     };
   },
 
-  // ---- Sessions ----
+  // ---- Sessions (stored at /users/{uid}/sessions/{sessionId}) ----
 
   async getAllSessions(): Promise<SessionData[]> {
     if (typeof window === "undefined") return [];
     try {
       const { uid } = await getAuth();
-      // List all event documents under users/{uid}/events
-      const events = await fsList(`users/${uid}/events`);
-      const allSessions: SessionData[] = [];
-
-      for (const event of events) {
-        const eventId = event.__id as string;
-        // List all session documents under users/{uid}/events/{eventId}/sessions
-        const sessionDocs = await fsList(`users/${uid}/events/${eventId}/sessions`);
-        for (const doc of sessionDocs) {
-          allSessions.push(normalizeSession({ ...doc, event: doc.event ?? eventId }));
-        }
-      }
-
-      return allSessions;
+      const data = await rtdbGet<Record<string, any>>(`users/${uid}/sessions`);
+      if (!data) return [];
+      
+      return Object.entries(data).map(([id, session]) => 
+        normalizeSession({ ...session, sessionId: id })
+      );
     } catch {
       return [];
     }
@@ -403,11 +389,8 @@ export const storage = {
       endTimestamp: session.endTimestamp ?? new Date().toISOString(),
     });
 
-    // Ensure the event document exists (create with minimal fields if needed)
-    await fsPatch(`users/${uid}/events/${normalized.event}`, { eventId: normalized.event });
-
-    // Save session document — store attempts as JSON string to avoid Firestore array nesting limits
-    await fsPatch(`users/${uid}/events/${normalized.event}/sessions/${normalized.sessionId}`, {
+    // Save session
+    await rtdbPut(`users/${uid}/sessions/${normalized.sessionId}`, {
       sessionId: normalized.sessionId,
       sessionType: normalized.sessionType,
       event: normalized.event,
@@ -418,16 +401,14 @@ export const storage = {
       totalQuestions: normalized.totalQuestions,
       correctCount: normalized.correctCount,
       accuracy: normalized.accuracy,
-      attempts: JSON.stringify(normalized.attempts),
+      attempts: normalized.attempts,
     });
   },
 
   async setCurrentSession(session: SessionData): Promise<void> {
     try {
       const { uid } = await getAuth();
-      await fsPatch(`users/${uid}`, {
-        currentSession: JSON.stringify(normalizeSession(session)),
-      });
+      await rtdbPut(`users/${uid}/currentSession`, normalizeSession(session));
     } catch {
       // non-critical
     }
@@ -436,10 +417,9 @@ export const storage = {
   async getCurrentSession(): Promise<SessionData | null> {
     try {
       const { uid } = await getAuth();
-      const doc = await fsGet(`users/${uid}`);
-      if (!doc?.currentSession) return null;
-      const parsed = typeof doc.currentSession === "string" ? JSON.parse(doc.currentSession) : doc.currentSession;
-      return normalizeSession(parsed);
+      const data = await rtdbGet<any>(`users/${uid}/currentSession`);
+      if (!data) return null;
+      return normalizeSession(data);
     } catch {
       return null;
     }
@@ -448,20 +428,19 @@ export const storage = {
   async clearCurrentSession(): Promise<void> {
     try {
       const { uid } = await getAuth();
-      await fsPatch(`users/${uid}`, { currentSession: "" });
+      await rtdbPut(`users/${uid}/currentSession`, null);
     } catch {
       // non-critical
     }
   },
 
-  // ---- Wrong / Completed questions (stored as fields on the event doc) ----
+  // ---- Progress data (stored at /users/{uid}/progress/{eventId}) ----
 
   async getWrongQuestions(eventId: string): Promise<number[]> {
     try {
       const { uid } = await getAuth();
-      const doc = await fsGet(`users/${uid}/events/${eventId}`);
-      const raw = doc?.wrongQuestions;
-      if (Array.isArray(raw)) return raw.map(Number);
+      const data = await rtdbGet<number[]>(`users/${uid}/progress/${eventId}/wrongQuestions`);
+      if (Array.isArray(data)) return data.map(Number);
       return [];
     } catch {
       return [];
@@ -473,10 +452,7 @@ export const storage = {
       const { uid } = await getAuth();
       const existing = await storage.getWrongQuestions(eventId);
       if (!existing.includes(questionId)) {
-        await fsPatch(`users/${uid}/events/${eventId}`, {
-          eventId,
-          wrongQuestions: [...existing, questionId],
-        });
+        await rtdbPut(`users/${uid}/progress/${eventId}/wrongQuestions`, [...existing, questionId]);
       }
     } catch (error) {
       console.warn("Unable to persist wrong question", error);
@@ -487,10 +463,7 @@ export const storage = {
     try {
       const { uid } = await getAuth();
       const existing = await storage.getWrongQuestions(eventId);
-      await fsPatch(`users/${uid}/events/${eventId}`, {
-        eventId,
-        wrongQuestions: existing.filter((id) => id !== questionId),
-      });
+      await rtdbPut(`users/${uid}/progress/${eventId}/wrongQuestions`, existing.filter((id) => id !== questionId));
     } catch (error) {
       console.warn("Unable to remove wrong question", error);
     }
@@ -499,9 +472,8 @@ export const storage = {
   async getCompletedQuestions(eventId: string): Promise<number[]> {
     try {
       const { uid } = await getAuth();
-      const doc = await fsGet(`users/${uid}/events/${eventId}`);
-      const raw = doc?.completedQuestions;
-      if (Array.isArray(raw)) return raw.map(Number);
+      const data = await rtdbGet<number[]>(`users/${uid}/progress/${eventId}/completedQuestions`);
+      if (Array.isArray(data)) return data.map(Number);
       return [];
     } catch {
       return [];
@@ -513,10 +485,7 @@ export const storage = {
       const { uid } = await getAuth();
       const existing = await storage.getCompletedQuestions(eventId);
       if (!existing.includes(questionId)) {
-        await fsPatch(`users/${uid}/events/${eventId}`, {
-          eventId,
-          completedQuestions: [...existing, questionId],
-        });
+        await rtdbPut(`users/${uid}/progress/${eventId}/completedQuestions`, [...existing, questionId]);
       }
     } catch (error) {
       console.warn("Unable to persist completed question", error);
@@ -541,14 +510,13 @@ export const storage = {
     return computeStats(attempts);
   },
 
-  // ---- Added courses (sidebar) — stored as field on user doc ----
+  // ---- Preferences (stored at /users/{uid}/preferences/) ----
 
   async getAddedCourses(): Promise<string[]> {
     try {
       const { uid } = await getAuth();
-      const doc = await fsGet(`users/${uid}`);
-      const raw = doc?.addedCourses;
-      if (Array.isArray(raw)) return raw.map(String);
+      const data = await rtdbGet<string[]>(`users/${uid}/preferences/addedCourses`);
+      if (Array.isArray(data)) return data.map(String);
       return [];
     } catch {
       return [];
@@ -559,7 +527,7 @@ export const storage = {
     const { uid } = await getAuth();
     const current = await storage.getAddedCourses();
     if (!current.includes(courseId)) {
-      await fsPatch(`users/${uid}`, { addedCourses: [...current, courseId] });
+      await rtdbPut(`users/${uid}/preferences/addedCourses`, [...current, courseId]);
       storageEvents.emit("addedCourses");
     }
   },
@@ -567,43 +535,49 @@ export const storage = {
   async removeCourse(courseId: string): Promise<void> {
     const { uid } = await getAuth();
     const current = await storage.getAddedCourses();
-    await fsPatch(`users/${uid}`, { addedCourses: current.filter((id) => id !== courseId) });
+    await rtdbPut(`users/${uid}/preferences/addedCourses`, current.filter((id) => id !== courseId));
     storageEvents.emit("addedCourses");
+  },
+
+  // ---- Profile (stored at /users/{uid}/profile/) ----
+
+  async saveProfile(profile: { firstName: string; lastName: string }): Promise<void> {
+    const { uid } = await getAuth();
+    await rtdbPatch(`users/${uid}/profile`, {
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      name: `${profile.firstName} ${profile.lastName}`.trim(),
+      updatedAt: new Date().toISOString(),
+    });
+  },
+
+  async getProfile(): Promise<{ firstName: string; lastName: string } | null> {
+    try {
+      const { uid } = await getAuth();
+      const data = await rtdbGet<any>(`users/${uid}/profile`);
+      if (!data) return null;
+      
+      if (data.firstName || data.lastName) {
+        return { firstName: data.firstName || "", lastName: data.lastName || "" };
+      }
+      
+      if (data.name) {
+        const [firstName = "", ...rest] = data.name.trim().split(/\s+/);
+        return { firstName, lastName: rest.join(" ") };
+      }
+      
+      return null;
+    } catch {
+      return null;
+    }
   },
 
   // ---- Reset ----
 
   async resetAllData(): Promise<void> {
     const { uid } = await getAuth();
-    // Clear user-level fields
-    await fsPatch(`users/${uid}`, { addedCourses: [], currentSession: "" });
-    // Note: deleting subcollections via REST requires listing + deleting each doc.
-    // For simplicity we just clear top-level state; session docs remain but won't affect new sessions.
+    await rtdbPut(`users/${uid}/sessions`, null);
+    await rtdbPut(`users/${uid}/progress`, null);
+    await rtdbPut(`users/${uid}/currentSession`, null);
   },
 };
-
-// ---------------------------------------------------------------------------
-// Internal stats helper
-// ---------------------------------------------------------------------------
-function computeStats(attempts: QuestionAttempt[]): UserStats {
-  const categoryStats: UserStats["categoryStats"] = {};
-  for (const a of attempts) {
-    if (!categoryStats[a.category]) categoryStats[a.category] = { attempts: 0, correct: 0, averageTime: 0 };
-    categoryStats[a.category].attempts++;
-    if (a.isCorrect) categoryStats[a.category].correct++;
-  }
-  for (const cat of Object.keys(categoryStats)) {
-    const catAttempts = attempts.filter((a) => a.category === cat);
-    categoryStats[cat].averageTime = catAttempts.length
-      ? catAttempts.reduce((s, a) => s + a.thinkTime, 0) / catAttempts.length
-      : 0;
-  }
-  const totalCorrect = attempts.filter((a) => a.isCorrect).length;
-  const totalTime = attempts.reduce((s, a) => s + a.thinkTime, 0);
-  return {
-    totalAttempts: attempts.length,
-    correctAnswers: totalCorrect,
-    averageTime: attempts.length ? totalTime / attempts.length : 0,
-    categoryStats,
-  };
-}

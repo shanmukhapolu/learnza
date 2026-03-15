@@ -1,0 +1,78 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        // Only authenticated users can read/write their own data
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+
+        "profile": {
+          // User profile data: firstName, lastName, name, email, updatedAt
+          ".validate": "newData.hasChildren()",
+          "firstName": { ".validate": "newData.isString() && newData.val().length <= 100" },
+          "lastName": { ".validate": "newData.isString() && newData.val().length <= 100" },
+          "name": { ".validate": "newData.isString() && newData.val().length <= 200" },
+          "email": { ".validate": "newData.isString()" },
+          "updatedAt": { ".validate": "newData.isString()" }
+        },
+
+        "preferences": {
+          // User preferences: addedCourses (array), settings
+          "addedCourses": {
+            ".validate": "newData.val() == null || newData.hasChildren()",
+            "$index": {
+              ".validate": "newData.isString() && newData.val().length <= 50"
+            }
+          }
+        },
+
+        "sessions": {
+          // Practice sessions keyed by sessionId
+          "$sessionId": {
+            ".validate": "newData.hasChild('sessionId') && newData.hasChild('event')",
+            "sessionId": { ".validate": "newData.isString()" },
+            "sessionType": { ".validate": "newData.isString() && (newData.val() === 'practice' || newData.val() === 'timed')" },
+            "event": { ".validate": "newData.isString() && newData.val().length <= 50" },
+            "startTimestamp": { ".validate": "newData.isString()" },
+            "endTimestamp": { ".validate": "newData.isString()" },
+            "totalThinkTime": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+            "totalExplanationTime": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+            "totalQuestions": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+            "correctCount": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+            "accuracy": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+            "attempts": {
+              // Array of question attempts
+              ".validate": "true"
+            }
+          }
+        },
+
+        "progress": {
+          // Progress data per course/event
+          "$eventId": {
+            ".validate": "$eventId.length <= 50",
+            "wrongQuestions": {
+              // Array of question IDs the user got wrong
+              ".validate": "newData.val() == null || newData.hasChildren()",
+              "$index": {
+                ".validate": "newData.isNumber()"
+              }
+            },
+            "completedQuestions": {
+              // Array of question IDs the user has completed
+              ".validate": "newData.val() == null || newData.hasChildren()",
+              "$index": {
+                ".validate": "newData.isNumber()"
+              }
+            }
+          }
+        },
+
+        "currentSession": {
+          // In-progress session state (can be any structure or null)
+          ".validate": "true"
+        }
+      }
+    }
+  }
+}
