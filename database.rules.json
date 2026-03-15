@@ -23,7 +23,9 @@
         "preferences": {
           "app": {
             "addedCourses": {
-              ".validate": "newData.isArray() || !newData.exists()"
+              "$index": {
+                ".validate": "$index.matches(/^[0-9]+$/) && newData.isString() && newData.val().length > 0"
+              }
             },
             "currentSession": {
               ".validate": "newData.isString() || newData.val() == null"
@@ -40,10 +42,14 @@
               ".validate": "newData.isString() && newData.val() === $eventId"
             },
             "wrongQuestions": {
-              ".validate": "newData.isArray() || !newData.exists()"
+              "$index": {
+                ".validate": "$index.matches(/^[0-9]+$/) && newData.isNumber() && newData.val() >= 0"
+              }
             },
             "completedQuestions": {
-              ".validate": "newData.isArray() || !newData.exists()"
+              "$index": {
+                ".validate": "$index.matches(/^[0-9]+$/) && newData.isNumber() && newData.val() >= 0"
+              }
             },
             "sessions": {
               "$sessionId": {
