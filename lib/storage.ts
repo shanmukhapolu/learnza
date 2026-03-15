@@ -196,10 +196,9 @@ function sessionDoc(orgId: string, eventId: string, sessionId: string) {
 }
 
 async function ensureOrganizationBootstrap(uid: string) {
-  await fsPatch(orgRoot(uid), {
-    ownerUid: uid,
-    updatedAt: new Date().toISOString(),
-  });
+  // Important: do not patch organizations/{uid} here.
+  // If org root exists without a valid owner membership, root update can 403.
+  // Creating/updating the self member doc is sufficient for downstream access checks.
   await fsPatch(memberDoc(uid, uid), {
     uid,
     role: "owner",
