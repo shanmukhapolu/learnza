@@ -175,16 +175,23 @@ async function getAuth(options?: { forceRefresh?: boolean }) {
   return { uid: auth.user.uid, idToken: auth.idToken };
 }
 
+type SchemaMode = "users" | "organizations";
+let schemaMode: SchemaMode = "users";
+
 function userRoot(uid: string) {
   return `users/${uid}`;
 }
 
+function orgRoot(uid: string) {
+  return `organizations/${uid}`;
+}
+
 function preferencesDoc(uid: string) {
-  return `${userRoot(uid)}/preferences/app`;
+  return schemaMode === "users" ? `${userRoot(uid)}/preferences/app` : `${orgRoot(uid)}/preferences/app`;
 }
 
 function eventDoc(uid: string, eventId: string) {
-  return `${userRoot(uid)}/events/${eventId}`;
+  return schemaMode === "users" ? `${userRoot(uid)}/events/${eventId}` : `${orgRoot(uid)}/events/${eventId}`;
 }
 
 function sessionDoc(uid: string, eventId: string, sessionId: string) {
@@ -192,14 +199,38 @@ function sessionDoc(uid: string, eventId: string, sessionId: string) {
 }
 
 async function ensureUserBootstrap(uid: string) {
-  const user = await fsGet(userRoot(uid));
-  if (!user) {
-    await fsPatch(userRoot(uid), {
-      uid,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+  try {
+    schemaMode = "users";
+    const user = await fsGet(userRoot(uid));
+    if (!user) {
+      await fsPatch(userRoot(uid), {
+        uid,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
+    const preferences = await fsGet(preferencesDoc(uid));
+    if (!preferences) {
+      await fsPatch(preferencesDoc(uid), {
+        addedCourses: [],
+        currentSession: "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    }
+    return;
+  } catch {
+    // Fallback for environments still running org-scoped rules.
+    schemaMode = "organizations";
   }
+
+  await fsPatch(`${orgRoot(uid)}/members/${uid}`, {
+    uid,
+    role: "owner",
+    status: "active",
+    joinedAt: new Date().toISOString(),
+  });
 
   const preferences = await fsGet(preferencesDoc(uid));
   if (!preferences) {
@@ -416,7 +447,7 @@ export const storage = {
       const { uid } = await getAuth();
       // List all event documents under users/{uid}/events
       await ensureUserBootstrap(uid);
-      const events = await fsList(`${userRoot(uid)}/events`);
+      const events = await fsList(schemaMode === "users" ? `${userRoot(uid)}/events` : `${orgRoot(uid)}/events`);
       const allSessions: SessionData[] = [];
 
       for (const event of events) {
