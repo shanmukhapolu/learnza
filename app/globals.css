@@ -27,22 +27,26 @@
   --muted: oklch(0.95 0.010 80);
   --muted-foreground: oklch(0.50 0.020 70);
 
-  /* Deep amber accent */
-  --accent: oklch(0.70 0.168 68);
-  --accent-foreground: oklch(0.99 0 0);
+  /* Golden yellow accent - lighter and more yellow than orange */
+  --accent: oklch(0.72 0.155 82);
+  --accent-foreground: oklch(0.14 0.025 65);
 
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.99 0 0);
+
+  /* Success green */
+  --success: oklch(0.65 0.19 145);
+  --success-foreground: oklch(0.99 0 0);
 
   --border: oklch(0.88 0.016 80);
   --input: oklch(0.88 0.016 80);
   --ring: oklch(0.82 0.178 85);
 
-  /* Chart colors — warm yellow family */
+  /* Chart colors — golden yellow family */
   --chart-1: oklch(0.82 0.178 85);
-  --chart-2: oklch(0.70 0.168 68);
-  --chart-3: oklch(0.62 0.155 60);
-  --chart-4: oklch(0.76 0.150 95);
+  --chart-2: oklch(0.72 0.155 82);
+  --chart-3: oklch(0.62 0.140 78);
+  --chart-4: oklch(0.76 0.150 90);
   --chart-5: oklch(0.88 0.090 85);
 
   --radius: 0.625rem;
@@ -76,21 +80,25 @@
   --muted: oklch(0.21 0.020 62);
   --muted-foreground: oklch(0.60 0.020 75);
 
-  /* Brighter amber accent */
-  --accent: oklch(0.74 0.172 72);
+  /* Golden yellow accent - brighter in dark mode */
+  --accent: oklch(0.76 0.160 82);
   --accent-foreground: oklch(0.12 0.025 60);
 
   --destructive: oklch(0.45 0.175 25);
   --destructive-foreground: oklch(0.94 0.012 80);
+
+  /* Success green */
+  --success: oklch(0.60 0.18 145);
+  --success-foreground: oklch(0.94 0.012 80);
 
   --border: oklch(0.24 0.022 62);
   --input: oklch(0.24 0.022 62);
   --ring: oklch(0.83 0.182 85);
 
   --chart-1: oklch(0.83 0.182 85);
-  --chart-2: oklch(0.74 0.172 72);
-  --chart-3: oklch(0.65 0.158 62);
-  --chart-4: oklch(0.78 0.155 98);
+  --chart-2: oklch(0.76 0.160 82);
+  --chart-3: oklch(0.65 0.145 78);
+  --chart-4: oklch(0.78 0.155 90);
   --chart-5: oklch(0.88 0.095 85);
 
   --sidebar: oklch(0.13 0.018 62);
@@ -122,6 +130,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);

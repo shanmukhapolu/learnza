@@ -567,7 +567,7 @@ function PracticeContent({ eventId }: { eventId: string }) {
                   <div className="text-sm text-muted-foreground mt-2">Answered</div>
                 </div>
                 <div className="text-center p-6 bg-muted/50 rounded-xl border border-border">
-                  <div className="text-3xl font-bold text-accent font-mono">{correctCount}</div>
+                  <div className="text-3xl font-bold text-success font-mono">{correctCount}</div>
                   <div className="text-sm text-muted-foreground mt-2">Correct</div>
                 </div>
                 <div className="text-center p-6 bg-muted/50 rounded-xl border border-border">
@@ -615,7 +615,7 @@ function PracticeContent({ eventId }: { eventId: string }) {
                 </div>
                 <div className="rounded-lg border p-4">
                   <div className="text-xs text-muted-foreground">Correct questions</div>
-                  <div className="text-2xl font-bold text-accent">{sessionSummary.correct}</div>
+                  <div className="text-2xl font-bold text-success">{sessionSummary.correct}</div>
                 </div>
                 <div className="rounded-lg border p-4">
                   <div className="text-xs text-muted-foreground">Incorrect questions</div>
@@ -667,7 +667,7 @@ function PracticeContent({ eventId }: { eventId: string }) {
                 <span className="font-mono text-sm font-bold text-primary">{liveThinkDisplay.toFixed(1)}s</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-accent" />
+                <CheckCircle2 className="h-5 w-5 text-success" />
                 <span className="text-lg font-mono font-bold">{correctCount}</span>
                 <span className="text-sm text-muted-foreground hidden sm:inline">correct</span>
               </div>
@@ -753,7 +753,7 @@ function PracticeContent({ eventId }: { eventId: string }) {
                 
                 if (showResult) {
                   if (isCorrect) {
-                    buttonClasses += " border-accent bg-accent/10 text-accent hover:bg-accent/10";
+                    buttonClasses += " border-success bg-success/10 text-success hover:bg-success/10";
                   } else if (isSelected && !isCorrect) {
                     buttonClasses += " border-destructive bg-destructive/10 text-destructive hover:bg-destructive/10";
                   }

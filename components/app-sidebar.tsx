@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
-import { Home, Layers, BarChart3, BookOpen } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Home, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -14,26 +14,13 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-
-const navItems = [
-  {
-    title: "Dashboard",
-    href: "/dashboard",
-    icon: Home,
-  },
-  {
-    title: "Courses",
-    href: "/courses",
-    icon: BookOpen,
-  },
-  {
-    title: "Analytics",
-    href: "/analytics",
-    icon: BarChart3,
-  },
-];
+import { storage, storageEvents } from "@/lib/storage";
+import { getCourseById } from "@/lib/events";
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -41,6 +28,37 @@ export function AppSidebar() {
   const { profile, user, signOut } = useAuth();
   const fallbackName = user?.displayName?.trim() || "Student";
   const resolvedName = [profile?.firstName, profile?.lastName].filter(Boolean).join(" ") || fallbackName;
+  
+  const [addedCourses, setAddedCourses] = useState<string[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadCourses = async () => {
+      const courses = await storage.getAddedCourses();
+      if (!cancelled) setAddedCourses(courses);
+    };
+    loadCourses();
+
+    // Re-fetch whenever addCourse / removeCourse is called anywhere
+    storageEvents.on("addedCourses", loadCourses);
+    return () => {
+      cancelled = true;
+      storageEvents.off("addedCourses", loadCourses);
+    };
+  }, []);
+
+  const mainNavItems = [
+    {
+      title: "Dashboard",
+      href: "/dashboard",
+      icon: Home,
+    },
+    {
+      title: "Courses",
+      href: "/courses",
+      icon: BookOpen,
+    },
+  ];
 
   return (
     <Sidebar>
@@ -56,22 +74,62 @@ export function AppSidebar() {
         </Link>
       </SidebarHeader>
       <SidebarContent className="p-4">
-        <SidebarMenu className="space-y-2">
-          {navItems.map((item) => (
-            <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
-                tooltip={item.title}
-                className="py-6"
-              >
-                <Link href={item.href}>
-                  <item.icon className="h-5 w-5" />
-                  <span className="text-base">{item.title}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+        <SidebarMenu className="space-y-1">
+          {/* Dashboard */}
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname === "/dashboard"}
+              tooltip="Dashboard"
+              className="py-6"
+            >
+              <Link href="/dashboard">
+                <Home className="h-5 w-5" />
+                <span className="text-base">Dashboard</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          {/* Courses with subitems */}
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname === "/courses" || pathname.startsWith("/course/")}
+              tooltip="Courses"
+              className="py-6"
+            >
+              <Link href="/courses">
+                <BookOpen className="h-5 w-5" />
+                <span className="text-base">Courses</span>
+              </Link>
+            </SidebarMenuButton>
+            
+            {/* Added courses as subitems - always visible */}
+            {addedCourses.length > 0 && (
+              <SidebarMenuSub>
+                {addedCourses.map((courseId) => {
+                  const course = getCourseById(courseId);
+                  if (!course) return null;
+                  const Icon = course.icon;
+                  const isActive = pathname === `/course/${courseId}` || pathname.startsWith(`/practice/${courseId}`);
+                  
+                  return (
+                    <SidebarMenuSubItem key={courseId}>
+                      <SidebarMenuSubButton
+                        asChild
+                        isActive={isActive}
+                      >
+                        <Link href={`/course/${courseId}`} className="flex items-center gap-2">
+                          <Icon className="h-4 w-4" />
+                          <span className="truncate">{course.name.replace("AP ", "")}</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  );
+                })}
+              </SidebarMenuSub>
+            )}
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-4">
