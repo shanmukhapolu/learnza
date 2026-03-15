@@ -15,9 +15,8 @@ service cloud.firestore {
     //     - currentSession              (JSON string of in-progress session)
     // -----------------------------------------------------------------------
     match /users/{userId} {
-      allow read, update: if request.auth != null && request.auth.uid == userId;
-      // Allow create so signup can write the profile document
-      allow create: if request.auth != null && request.auth.uid == userId;
+      // Allow full read/write access for authenticated user to their own document
+      allow read, write: if request.auth != null && request.auth.uid == userId;
 
       // -----------------------------------------------------------------------
       // /users/{userId}/events/{eventId}
@@ -25,55 +24,18 @@ service cloud.firestore {
       //     - eventId           (string, e.g. "ap-bio")
       //     - wrongQuestions    (array of int question IDs)
       //     - completedQuestions (array of int question IDs)
-      //
-      //   This document is created/upserted before any session is saved so
-      //   it always exists as a parent for the sessions subcollection.
       // -----------------------------------------------------------------------
       match /events/{eventId} {
+        // Allow full read/write for authenticated user to their own events
         allow read, write: if request.auth != null && request.auth.uid == userId;
-
-        // Validate writes: eventId must match the document ID
-        allow create, update: if request.auth != null
-          && request.auth.uid == userId
-          && (!request.resource.data.keys().hasAll(['eventId'])
-              || request.resource.data.eventId == eventId);
 
         // -----------------------------------------------------------------------
         // /users/{userId}/events/{eventId}/sessions/{sessionId}
-        //   Fields on this document:
-        //     - sessionId         (string)
-        //     - sessionType       ("practice" | "timed")
-        //     - event             (string, matches eventId)
-        //     - startTimestamp    (ISO string)
-        //     - endTimestamp      (ISO string)
-        //     - totalThinkTime    (number)
-        //     - totalExplanationTime (number)
-        //     - totalQuestions    (number)
-        //     - correctCount      (number)
-        //     - accuracy          (number 0-100)
-        //     - attempts          (JSON string — serialised array)
+        //   Session documents with practice/timed session data
         // -----------------------------------------------------------------------
         match /sessions/{sessionId} {
-          allow read, delete: if request.auth != null && request.auth.uid == userId;
-
-          allow create, update: if request.auth != null
-            && request.auth.uid == userId
-            // Required fields
-            && request.resource.data.keys().hasAll(['sessionId', 'sessionType', 'event',
-                'startTimestamp', 'totalQuestions', 'correctCount', 'accuracy', 'attempts'])
-            // Type checks
-            && request.resource.data.sessionId is string
-            && request.resource.data.event is string
-            && request.resource.data.startTimestamp is string
-            && request.resource.data.totalQuestions is int
-            && request.resource.data.correctCount is int
-            && request.resource.data.accuracy is number
-            && request.resource.data.attempts is string
-            // Sanity bounds
-            && request.resource.data.correctCount >= 0
-            && request.resource.data.totalQuestions >= 0
-            && request.resource.data.accuracy >= 0
-            && request.resource.data.accuracy <= 100;
+          // Allow full read/write for authenticated user to their own sessions
+          allow read, write: if request.auth != null && request.auth.uid == userId;
         }
       }
     }
