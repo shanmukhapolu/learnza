@@ -7,12 +7,20 @@ service cloud.firestore {
     }
 
     function isOrgMember(orgId) {
-      return isSignedIn() && exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid));
+      return isSignedIn() && (
+        request.auth.uid == orgId
+        || exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid))
+      );
     }
 
     function isOrgOwner(orgId) {
-      return isSignedIn()
-        && get(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid)).data.role == 'owner';
+      return isSignedIn() && (
+        request.auth.uid == orgId
+        || (
+          exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid))
+          && get(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid)).data.role == 'owner'
+        )
+      );
     }
 
     // Legacy path retained only for profile reads/writes during migration.
@@ -22,17 +30,14 @@ service cloud.firestore {
 
     match /organizations/{orgId} {
       allow read: if isOrgMember(orgId);
-      allow create: if isSignedIn() && request.auth.uid == orgId
-        && request.resource.data.ownerUid == request.auth.uid;
-      allow update: if isOrgOwner(orgId);
+      allow create: if isSignedIn() && request.auth.uid == orgId;
+      allow update: if isSignedIn() && request.auth.uid == orgId;
       allow delete: if false;
 
       // Org membership records
       match /members/{memberId} {
         allow read: if isOrgMember(orgId);
-        allow create: if isSignedIn() && request.auth.uid == orgId && memberId == request.auth.uid
-          && request.resource.data.uid == request.auth.uid
-          && request.resource.data.role == 'owner';
+        allow create: if isSignedIn() && request.auth.uid == orgId && memberId == request.auth.uid;
         allow update: if isOrgOwner(orgId) || (isSignedIn() && request.auth.uid == memberId);
         allow delete: if false;
       }
