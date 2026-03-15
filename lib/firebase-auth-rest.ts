@@ -146,62 +146,61 @@ export async function refreshIdToken(refreshToken: string) {
 export async function saveUserProfile(idToken: string, uid: string, profile: UserProfile) {
   const fullName = `${profile.firstName} ${profile.lastName}`.trim();
 
-  const orgUrl = new URL(`${FIRESTORE_BASE}/organizations/${uid}`);
-  orgUrl.searchParams.set("access_token", idToken);
-  orgUrl.searchParams.set("updateMask.fieldPaths", "ownerUid");
-  orgUrl.searchParams.append("updateMask.fieldPaths", "updatedAt");
+  // Create/update user root doc immediately at signup so user appears in Firestore.
+  const userUrl = new URL(`${FIRESTORE_BASE}/users/${uid}`);
+  userUrl.searchParams.set("access_token", idToken);
+  userUrl.searchParams.set("updateMask.fieldPaths", "uid");
+  userUrl.searchParams.append("updateMask.fieldPaths", "name");
+  userUrl.searchParams.append("updateMask.fieldPaths", "firstName");
+  userUrl.searchParams.append("updateMask.fieldPaths", "lastName");
+  userUrl.searchParams.append("updateMask.fieldPaths", "updatedAt");
 
-  await fetch(orgUrl.toString(), {
+  const userRes = await fetch(userUrl.toString(), {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
       fields: {
-        ownerUid: { stringValue: uid },
-        updatedAt: { timestampValue: new Date().toISOString() },
-      },
-    }),
-  }).catch(() => null);
-
-  // Use Firestore REST API with Firebase ID token as query param (not Bearer token)
-
-  // Firebase ID tokens work when passed via access_token query param
-  const url = new URL(`${FIRESTORE_BASE}/organizations/${uid}/members/${uid}`);
-  url.searchParams.set("access_token", idToken);
-  url.searchParams.set("updateMask.fieldPaths", "name");
-  url.searchParams.append("updateMask.fieldPaths", "firstName");
-  url.searchParams.append("updateMask.fieldPaths", "lastName");
-  url.searchParams.append("updateMask.fieldPaths", "uid");
-  url.searchParams.append("updateMask.fieldPaths", "role");
-  url.searchParams.append("updateMask.fieldPaths", "status");
-
-  const nameRes = await fetch(url.toString(), {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      fields: {
+        uid: { stringValue: uid },
         name: { stringValue: fullName },
         firstName: { stringValue: profile.firstName },
         lastName: { stringValue: profile.lastName },
-        uid: { stringValue: uid },
-        role: { stringValue: "owner" },
-        status: { stringValue: "active" },
+        updatedAt: { timestampValue: new Date().toISOString() },
       },
     }),
   });
 
-  if (!nameRes.ok) {
-    const text = await nameRes.text().catch(() => "");
-    throw new Error(`Failed to save display name: ${nameRes.status} ${text}`);
+  if (!userRes.ok) {
+    const text = await userRes.text().catch(() => "");
+    throw new Error(`Failed to save user profile: ${userRes.status} ${text}`);
   }
+
+  // Bootstrap preferences doc used by sidebar/session persistence.
+  const prefUrl = new URL(`${FIRESTORE_BASE}/users/${uid}/preferences/app`);
+  prefUrl.searchParams.set("access_token", idToken);
+  prefUrl.searchParams.set("updateMask.fieldPaths", "addedCourses");
+  prefUrl.searchParams.append("updateMask.fieldPaths", "currentSession");
+  prefUrl.searchParams.append("updateMask.fieldPaths", "updatedAt");
+
+  await fetch(prefUrl.toString(), {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      fields: {
+        addedCourses: { arrayValue: { values: [] } },
+        currentSession: { stringValue: "" },
+        updatedAt: { timestampValue: new Date().toISOString() },
+      },
+    }),
+  }).catch(() => null);
 }
 
 export async function getUserProfile(idToken: string, uid: string): Promise<UserProfile | null> {
   // Use Firestore REST API with Firebase ID token as query param
-  const url = new URL(`${FIRESTORE_BASE}/organizations/${uid}/members/${uid}`);
+  const url = new URL(`${FIRESTORE_BASE}/users/${uid}`);
   url.searchParams.set("access_token", idToken);
 
   const nameRes = await fetch(url.toString());

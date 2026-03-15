@@ -6,57 +6,30 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isOrgMember(orgId) {
-      return isSignedIn() && (
-        request.auth.uid == orgId
-        || exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid))
-      );
+    function isSelf(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isOrgOwner(orgId) {
-      return isSignedIn() && (
-        request.auth.uid == orgId
-        || (
-          exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid))
-          && get(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid)).data.role == 'owner'
-        )
-      );
-    }
-
-    // Legacy path retained only for profile reads/writes during migration.
+    // Root user profile document
     match /users/{userId} {
-      allow read, create, update: if isSignedIn() && request.auth.uid == userId;
-    }
-
-    match /organizations/{orgId} {
-      allow read: if isOrgMember(orgId);
-      allow create: if isSignedIn() && request.auth.uid == orgId;
-      allow update: if isSignedIn() && request.auth.uid == orgId;
+      allow read, create, update: if isSelf(userId);
       allow delete: if false;
 
-      // Org membership records
-      match /members/{memberId} {
-        allow read: if isOrgMember(orgId);
-        allow create: if isSignedIn() && request.auth.uid == orgId && memberId == request.auth.uid;
-        allow update: if isOrgOwner(orgId) || (isSignedIn() && request.auth.uid == memberId);
-        allow delete: if false;
-      }
-
-      // App-level preferences (courses, current session)
+      // App-level preferences used by sidebar/session state
       match /preferences/{docId} {
-        allow read, write: if isOrgMember(orgId)
-          && docId == 'app';
+        allow read, write: if isSelf(userId) && docId == 'app';
       }
 
-      // Event progress buckets per course
+      // Per-course progress bucket
       match /events/{eventId} {
-        allow read, write: if isOrgMember(orgId)
-          && (!request.resource.data.keys().hasAll(['eventId']) || request.resource.data.eventId == eventId);
+        allow read, write: if isSelf(userId)
+          && (!request.resource.data.keys().hasAll(['eventId'])
+              || request.resource.data.eventId == eventId);
 
         match /sessions/{sessionId} {
-          allow read, delete: if isOrgMember(orgId);
+          allow read, delete: if isSelf(userId);
 
-          allow create, update: if isOrgMember(orgId)
+          allow create, update: if isSelf(userId)
             && request.resource.data.keys().hasAll([
               'sessionId',
               'sessionType',

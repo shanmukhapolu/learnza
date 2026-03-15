@@ -175,36 +175,41 @@ async function getAuth(options?: { forceRefresh?: boolean }) {
   return { uid: auth.user.uid, idToken: auth.idToken };
 }
 
-function orgRoot(orgId: string) {
-  return `organizations/${orgId}`;
+function userRoot(uid: string) {
+  return `users/${uid}`;
 }
 
-function memberDoc(orgId: string, uid: string) {
-  return `${orgRoot(orgId)}/members/${uid}`;
+function preferencesDoc(uid: string) {
+  return `${userRoot(uid)}/preferences/app`;
 }
 
-function preferencesDoc(orgId: string) {
-  return `${orgRoot(orgId)}/preferences/app`;
+function eventDoc(uid: string, eventId: string) {
+  return `${userRoot(uid)}/events/${eventId}`;
 }
 
-function eventDoc(orgId: string, eventId: string) {
-  return `${orgRoot(orgId)}/events/${eventId}`;
+function sessionDoc(uid: string, eventId: string, sessionId: string) {
+  return `${eventDoc(uid, eventId)}/sessions/${sessionId}`;
 }
 
-function sessionDoc(orgId: string, eventId: string, sessionId: string) {
-  return `${eventDoc(orgId, eventId)}/sessions/${sessionId}`;
-}
+async function ensureUserBootstrap(uid: string) {
+  const user = await fsGet(userRoot(uid));
+  if (!user) {
+    await fsPatch(userRoot(uid), {
+      uid,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+  }
 
-async function ensureOrganizationBootstrap(uid: string) {
-  // Important: do not patch organizations/{uid} here.
-  // If org root exists without a valid owner membership, root update can 403.
-  // Creating/updating the self member doc is sufficient for downstream access checks.
-  await fsPatch(memberDoc(uid, uid), {
-    uid,
-    role: "owner",
-    status: "active",
-    joinedAt: new Date().toISOString(),
-  });
+  const preferences = await fsGet(preferencesDoc(uid));
+  if (!preferences) {
+    await fsPatch(preferencesDoc(uid), {
+      addedCourses: [],
+      currentSession: "",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -409,14 +414,14 @@ export const storage = {
     if (typeof window === "undefined") return [];
     try {
       const { uid } = await getAuth();
-      // List all event documents under organizations/{uid}/events
-      await ensureOrganizationBootstrap(uid);
-      const events = await fsList(`${orgRoot(uid)}/events`);
+      // List all event documents under users/{uid}/events
+      await ensureUserBootstrap(uid);
+      const events = await fsList(`${userRoot(uid)}/events`);
       const allSessions: SessionData[] = [];
 
       for (const event of events) {
         const eventId = event.__id as string;
-        // List all session documents under organizations/{uid}/events/{eventId}/sessions
+        // List all session documents under users/{uid}/events/{eventId}/sessions
         const sessionDocs = await fsList(`${eventDoc(uid, eventId)}/sessions`);
         for (const doc of sessionDocs) {
           allSessions.push(normalizeSession({ ...doc, event: doc.event ?? eventId }));
@@ -437,7 +442,7 @@ export const storage = {
     });
 
     // Ensure the event document exists (create with minimal fields if needed)
-    await ensureOrganizationBootstrap(uid);
+    await ensureUserBootstrap(uid);
     await fsPatch(eventDoc(uid, normalized.event), { eventId: normalized.event, updatedAt: new Date().toISOString() });
 
     // Save session document — store attempts as JSON string to avoid Firestore array nesting limits
@@ -459,7 +464,7 @@ export const storage = {
   async setCurrentSession(session: SessionData): Promise<void> {
     try {
       const { uid } = await getAuth();
-      await ensureOrganizationBootstrap(uid);
+      await ensureUserBootstrap(uid);
       await fsPatch(preferencesDoc(uid), {
         currentSession: JSON.stringify(normalizeSession(session)),
       });
@@ -471,7 +476,7 @@ export const storage = {
   async getCurrentSession(): Promise<SessionData | null> {
     try {
       const { uid } = await getAuth();
-      await ensureOrganizationBootstrap(uid);
+      await ensureUserBootstrap(uid);
       const doc = await fsGet(preferencesDoc(uid));
       if (!doc?.currentSession) return null;
       const parsed = typeof doc.currentSession === "string" ? JSON.parse(doc.currentSession) : doc.currentSession;
@@ -484,7 +489,7 @@ export const storage = {
   async clearCurrentSession(): Promise<void> {
     try {
       const { uid } = await getAuth();
-      await ensureOrganizationBootstrap(uid);
+      await ensureUserBootstrap(uid);
       await fsPatch(preferencesDoc(uid), { currentSession: "" });
     } catch {
       // non-critical
@@ -496,7 +501,7 @@ export const storage = {
   async getWrongQuestions(eventId: string): Promise<number[]> {
     try {
       const { uid } = await getAuth();
-      await ensureOrganizationBootstrap(uid);
+      await ensureUserBootstrap(uid);
       const doc = await fsGet(eventDoc(uid, eventId));
       const raw = doc?.wrongQuestions;
       if (Array.isArray(raw)) return raw.map(Number);
@@ -511,7 +516,7 @@ export const storage = {
       const { uid } = await getAuth();
       const existing = await storage.getWrongQuestions(eventId);
       if (!existing.includes(questionId)) {
-        await ensureOrganizationBootstrap(uid);
+        await ensureUserBootstrap(uid);
         await fsPatch(eventDoc(uid, eventId), {
           eventId,
           wrongQuestions: [...existing, questionId],
@@ -526,7 +531,7 @@ export const storage = {
     try {
       const { uid } = await getAuth();
       const existing = await storage.getWrongQuestions(eventId);
-      await ensureOrganizationBootstrap(uid);
+      await ensureUserBootstrap(uid);
       await fsPatch(eventDoc(uid, eventId), {
         eventId,
         wrongQuestions: existing.filter((id) => id !== questionId),
@@ -539,7 +544,7 @@ export const storage = {
   async getCompletedQuestions(eventId: string): Promise<number[]> {
     try {
       const { uid } = await getAuth();
-      await ensureOrganizationBootstrap(uid);
+      await ensureUserBootstrap(uid);
       const doc = await fsGet(eventDoc(uid, eventId));
       const raw = doc?.completedQuestions;
       if (Array.isArray(raw)) return raw.map(Number);
@@ -554,7 +559,7 @@ export const storage = {
       const { uid } = await getAuth();
       const existing = await storage.getCompletedQuestions(eventId);
       if (!existing.includes(questionId)) {
-        await ensureOrganizationBootstrap(uid);
+        await ensureUserBootstrap(uid);
         await fsPatch(eventDoc(uid, eventId), {
           eventId,
           completedQuestions: [...existing, questionId],
@@ -583,12 +588,12 @@ export const storage = {
     return computeStats(attempts);
   },
 
-  // ---- Added courses (sidebar) — stored in org preferences ----
+  // ---- Added courses (sidebar) — stored in user preferences ----
 
   async getAddedCourses(): Promise<string[]> {
     try {
       const { uid } = await getAuth();
-      await ensureOrganizationBootstrap(uid);
+      await ensureUserBootstrap(uid);
       const doc = await fsGet(preferencesDoc(uid));
       const raw = doc?.addedCourses;
       if (Array.isArray(raw)) return raw.map(String);
@@ -602,7 +607,7 @@ export const storage = {
     const { uid } = await getAuth();
     const current = await storage.getAddedCourses();
     if (!current.includes(courseId)) {
-      await ensureOrganizationBootstrap(uid);
+      await ensureUserBootstrap(uid);
       await fsPatch(preferencesDoc(uid), { addedCourses: [...current, courseId] });
       storageEvents.emit("addedCourses");
     }
@@ -611,7 +616,7 @@ export const storage = {
   async removeCourse(courseId: string): Promise<void> {
     const { uid } = await getAuth();
     const current = await storage.getAddedCourses();
-    await ensureOrganizationBootstrap(uid);
+    await ensureUserBootstrap(uid);
     await fsPatch(preferencesDoc(uid), { addedCourses: current.filter((id) => id !== courseId) });
     storageEvents.emit("addedCourses");
   },
@@ -621,7 +626,7 @@ export const storage = {
   async resetAllData(): Promise<void> {
     const { uid } = await getAuth();
     // Clear user-level fields
-    await ensureOrganizationBootstrap(uid);
+    await ensureUserBootstrap(uid);
     await fsPatch(preferencesDoc(uid), { addedCourses: [], currentSession: "" });
     // Note: deleting subcollections via REST requires listing + deleting each doc.
     // For simplicity we just clear top-level state; session docs remain but won't affect new sessions.
