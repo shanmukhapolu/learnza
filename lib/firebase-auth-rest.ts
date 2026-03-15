@@ -1,4 +1,4 @@
-import { FIREBASE_API_KEY, FIREBASE_PROJECT_ID } from "@/lib/firebase-config";
+import { FIREBASE_API_KEY, FIREBASE_DATABASE_URL } from "@/lib/firebase-config";
 
 export interface AuthUser {
   uid: string;
@@ -20,7 +20,7 @@ export interface UserProfile {
 
 const AUTH_BASE = "https://identitytoolkit.googleapis.com/v1";
 const SECURE_TOKEN_BASE = "https://securetoken.googleapis.com/v1";
-const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
+const RTDB_BASE = FIREBASE_DATABASE_URL.replace(/\/$/, "");
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
@@ -43,9 +43,7 @@ function resolveUid(data: any): string {
   if (token) {
     const payload = decodeJwtPayload(token);
     const fromToken = (payload?.user_id || payload?.sub) as string | undefined;
-    if (typeof fromToken === "string" && fromToken.length > 0) {
-      return fromToken;
-    }
+    if (typeof fromToken === "string" && fromToken.length > 0) return fromToken;
   }
 
   return "";
@@ -72,28 +70,17 @@ async function authRequest(endpoint: string, body: Record<string, unknown>) {
   });
 
   const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data?.error?.message || "Authentication request failed");
-  }
-
+  if (!res.ok) throw new Error(data?.error?.message || "Authentication request failed");
   return data;
 }
 
 export async function signUpWithEmail(email: string, password: string) {
-  const data = await authRequest("accounts:signUp", {
-    email,
-    password,
-    returnSecureToken: true,
-  });
+  const data = await authRequest("accounts:signUp", { email, password, returnSecureToken: true });
   return toSession(data);
 }
 
 export async function signInWithEmail(email: string, password: string) {
-  const data = await authRequest("accounts:signInWithPassword", {
-    email,
-    password,
-    returnSecureToken: true,
-  });
+  const data = await authRequest("accounts:signInWithPassword", { email, password, returnSecureToken: true });
   return toSession(data);
 }
 
@@ -108,15 +95,9 @@ export async function signInWithGoogleIdToken(idToken: string) {
 }
 
 export async function updateDisplayName(idToken: string, displayName: string, fallbackUid?: string) {
-  const data = await authRequest("accounts:update", {
-    idToken,
-    displayName,
-    returnSecureToken: true,
-  });
+  const data = await authRequest("accounts:update", { idToken, displayName, returnSecureToken: true });
   const session = toSession(data);
-  if (!session.user.uid && fallbackUid) {
-    session.user.uid = fallbackUid;
-  }
+  if (!session.user.uid && fallbackUid) session.user.uid = fallbackUid;
   return session;
 }
 
@@ -124,16 +105,11 @@ export async function refreshIdToken(refreshToken: string) {
   const res = await fetch(`${SECURE_TOKEN_BASE}/token?key=${FIREBASE_API_KEY}`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: refreshToken,
-    }),
+    body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: refreshToken }),
   });
 
   const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data?.error?.message || "Token refresh failed");
-  }
+  if (!res.ok) throw new Error(data?.error?.message || "Token refresh failed");
 
   return {
     idToken: data.id_token,
@@ -143,70 +119,50 @@ export async function refreshIdToken(refreshToken: string) {
   };
 }
 
-export async function saveUserProfile(idToken: string, uid: string, profile: UserProfile) {
-  const fullName = `${profile.firstName} ${profile.lastName}`.trim();
-
-  // Use Firestore REST API with Firebase ID token as query param (not Bearer token)
-  // Firebase ID tokens work when passed via access_token query param
-  const url = new URL(`${FIRESTORE_BASE}/users/${uid}`);
-  url.searchParams.set("access_token", idToken);
-  url.searchParams.set("updateMask.fieldPaths", "name");
-  url.searchParams.append("updateMask.fieldPaths", "firstName");
-  url.searchParams.append("updateMask.fieldPaths", "lastName");
-
-  const nameRes = await fetch(url.toString(), {
+async function rtdbPatch(path: string, idToken: string, payload: Record<string, unknown>) {
+  const res = await fetch(`${RTDB_BASE}/${path}.json?auth=${encodeURIComponent(idToken)}`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      fields: {
-        name: { stringValue: fullName },
-        firstName: { stringValue: profile.firstName },
-        lastName: { stringValue: profile.lastName },
-      },
-    }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
   });
-
-  if (!nameRes.ok) {
-    const text = await nameRes.text().catch(() => "");
-    throw new Error(`Failed to save display name: ${nameRes.status} ${text}`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Failed RTDB write (${path}): ${res.status} ${text}`);
   }
 }
 
+export async function saveUserProfile(idToken: string, uid: string, profile: UserProfile) {
+  const fullName = `${profile.firstName} ${profile.lastName}`.trim();
+
+  await rtdbPatch(`users/${uid}`, idToken, {
+    uid,
+    name: fullName,
+    firstName: profile.firstName,
+    lastName: profile.lastName,
+    updatedAt: new Date().toISOString(),
+  });
+
+  await rtdbPatch(`users/${uid}/preferences/app`, idToken, {
+    addedCourses: [],
+    currentSession: "",
+    updatedAt: new Date().toISOString(),
+  });
+}
+
 export async function getUserProfile(idToken: string, uid: string): Promise<UserProfile | null> {
-  // Use Firestore REST API with Firebase ID token as query param
-  const url = new URL(`${FIRESTORE_BASE}/users/${uid}`);
-  url.searchParams.set("access_token", idToken);
+  const res = await fetch(`${RTDB_BASE}/users/${uid}.json?auth=${encodeURIComponent(idToken)}`);
+  if (!res.ok) return null;
 
-  const nameRes = await fetch(url.toString());
-  
-  if (!nameRes.ok) {
-    return null;
+  const data = await res.json();
+  if (!data || typeof data !== "object") return null;
+
+  if (typeof data.firstName === "string" || typeof data.lastName === "string") {
+    return { firstName: data.firstName || "", lastName: data.lastName || "" };
   }
 
-  const data = await nameRes.json();
-  if (!data?.fields) {
-    return null;
-  }
-
-  const fields = data.fields;
-  
-  // Check for firstName/lastName fields first
-  if (fields.firstName?.stringValue || fields.lastName?.stringValue) {
-    return {
-      firstName: fields.firstName?.stringValue || "",
-      lastName: fields.lastName?.stringValue || "",
-    };
-  }
-
-  // Fallback: parse from full name field
-  if (fields.name?.stringValue) {
-    const [firstName = "", ...rest] = fields.name.stringValue.trim().split(/\s+/);
-    return {
-      firstName,
-      lastName: rest.join(" "),
-    };
+  if (typeof data.name === "string") {
+    const [firstName = "", ...rest] = data.name.trim().split(/\s+/);
+    return { firstName, lastName: rest.join(" ") };
   }
 
   return null;

@@ -1,0 +1,77 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+
+        "uid": {
+          ".validate": "newData.isString() && newData.val() === $uid"
+        },
+        "name": {
+          ".validate": "newData.isString() && newData.val().length > 0"
+        },
+        "firstName": {
+          ".validate": "newData.isString()"
+        },
+        "lastName": {
+          ".validate": "newData.isString()"
+        },
+
+        "preferences": {
+          "app": {
+            "addedCourses": {
+              "$index": {
+                ".validate": "$index.matches(/^[0-9]+$/) && newData.isString() && newData.val().length > 0"
+              }
+            },
+            "currentSession": {
+              ".validate": "newData.isString() || newData.val() == null"
+            },
+            "$other": {
+              ".validate": "newData.isString() || newData.isNumber() || newData.isBoolean() || !newData.exists()"
+            }
+          }
+        },
+
+        "events": {
+          "$eventId": {
+            "eventId": {
+              ".validate": "newData.isString() && newData.val() === $eventId"
+            },
+            "wrongQuestions": {
+              "$index": {
+                ".validate": "$index.matches(/^[0-9]+$/) && newData.isNumber() && newData.val() >= 0"
+              }
+            },
+            "completedQuestions": {
+              "$index": {
+                ".validate": "$index.matches(/^[0-9]+$/) && newData.isNumber() && newData.val() >= 0"
+              }
+            },
+            "sessions": {
+              "$sessionId": {
+                "sessionId": { ".validate": "newData.isString() && newData.val().length > 0" },
+                "sessionType": { ".validate": "newData.isString() && (newData.val() == 'practice' || newData.val() == 'timed')" },
+                "event": { ".validate": "newData.isString() && newData.val().length > 0" },
+                "startTimestamp": { ".validate": "newData.isString() && newData.val().length > 0" },
+                "endTimestamp": { ".validate": "newData.isString() || !newData.exists()" },
+                "totalThinkTime": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+                "totalExplanationTime": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+                "totalQuestions": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+                "correctCount": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+                "accuracy": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+                "attempts": { ".validate": "newData.isString()" },
+                "$other": {
+                  ".validate": "newData.isString() || newData.isNumber() || newData.isBoolean() || !newData.exists()"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
