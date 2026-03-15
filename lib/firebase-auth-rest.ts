@@ -146,13 +146,35 @@ export async function refreshIdToken(refreshToken: string) {
 export async function saveUserProfile(idToken: string, uid: string, profile: UserProfile) {
   const fullName = `${profile.firstName} ${profile.lastName}`.trim();
 
+  const orgUrl = new URL(`${FIRESTORE_BASE}/organizations/${uid}`);
+  orgUrl.searchParams.set("access_token", idToken);
+  orgUrl.searchParams.set("updateMask.fieldPaths", "ownerUid");
+  orgUrl.searchParams.append("updateMask.fieldPaths", "updatedAt");
+
+  await fetch(orgUrl.toString(), {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      fields: {
+        ownerUid: { stringValue: uid },
+        updatedAt: { timestampValue: new Date().toISOString() },
+      },
+    }),
+  }).catch(() => null);
+
   // Use Firestore REST API with Firebase ID token as query param (not Bearer token)
+
   // Firebase ID tokens work when passed via access_token query param
-  const url = new URL(`${FIRESTORE_BASE}/users/${uid}`);
+  const url = new URL(`${FIRESTORE_BASE}/organizations/${uid}/members/${uid}`);
   url.searchParams.set("access_token", idToken);
   url.searchParams.set("updateMask.fieldPaths", "name");
   url.searchParams.append("updateMask.fieldPaths", "firstName");
   url.searchParams.append("updateMask.fieldPaths", "lastName");
+  url.searchParams.append("updateMask.fieldPaths", "uid");
+  url.searchParams.append("updateMask.fieldPaths", "role");
+  url.searchParams.append("updateMask.fieldPaths", "status");
 
   const nameRes = await fetch(url.toString(), {
     method: "PATCH",
@@ -164,6 +186,9 @@ export async function saveUserProfile(idToken: string, uid: string, profile: Use
         name: { stringValue: fullName },
         firstName: { stringValue: profile.firstName },
         lastName: { stringValue: profile.lastName },
+        uid: { stringValue: uid },
+        role: { stringValue: "owner" },
+        status: { stringValue: "active" },
       },
     }),
   });
@@ -176,7 +201,7 @@ export async function saveUserProfile(idToken: string, uid: string, profile: Use
 
 export async function getUserProfile(idToken: string, uid: string): Promise<UserProfile | null> {
   // Use Firestore REST API with Firebase ID token as query param
-  const url = new URL(`${FIRESTORE_BASE}/users/${uid}`);
+  const url = new URL(`${FIRESTORE_BASE}/organizations/${uid}/members/${uid}`);
   url.searchParams.set("access_token", idToken);
 
   const nameRes = await fetch(url.toString());
